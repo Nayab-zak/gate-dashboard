@@ -171,3 +171,85 @@ def terminal_hour_heatmap(start_iso: str, end_iso: str,
         for t, h, s in cur.iterate():
             rows.append({"terminal": t, "hour": int(h), "pred": float(s or 0.0)})
     return {"cells": rows}
+
+# --- SUNBURST: Terminal -> MoveType -> Desig -------------------------------
+@router.get("/sunburst")
+def sunburst(
+    start_iso: str,
+    end_iso: str,
+    terminal_id: Optional[str] = None,    # "ALL" or specific - "ALL" treated as no filter
+    move_type: Optional[str] = None,       # "ALL" | IN | OUT - "ALL" treated as no filter
+    desig: Optional[str] = None            # "ALL" | EMPTY | FULL | EXP - "ALL" treated as no filter
+):
+    """
+    Returns hierarchical totals of TokenCount_pred for the window:
+      [{ name: TerminalID, value: sum, children: [
+           { name: MoveType, value: sum, children: [
+              { name: Desig, value: sum }
+           ]}
+      ]}]
+    
+    Performance Notes:
+    - Uses projection on (TerminalID, MoveDate_pred, MoveHour_pred) for fast scans
+    - For massive datasets, consider materialized hourly views updated by ETL
+    - Query scans only the window and groups by 3 columns - optimized for Vertica
+    
+    Data Handling:
+    - "ALL" parameters are treated as no filter (backend strips them)
+    - Unknown/blank desig values are mapped to 'UNK' to prevent dropped rows
+    - Children are sorted descending by value for clean visualization
+    - Values represent sum of TokenCount_pred over the selected window
+    """
+    start_key, end_key = _key_bounds(start_iso, end_iso)
+
+    # Build WHERE from filters (treat "ALL" as no filter)
+    wheres, params = _base_where(terminal_id, move_type, desig)
+
+    # Aggregate at TerminalID x MoveType x Desig, then sum across hours in window
+    q = f"""
+    WITH keyed AS (
+      SELECT
+        TerminalID,
+        UPPER(MoveType) AS MoveType,
+        UPPER(COALESCE(NULLIF(Desig, ''), 'UNK')) AS Desig,
+        (CAST(TO_CHAR(MoveDate_pred,'YYYYMMDD') AS INTEGER)*100 + MoveHour_pred) AS ymdh_key,
+        TokenCount_pred
+      FROM {settings.VERTICA_TABLE_TOKENS}
+    )
+    SELECT TerminalID, MoveType, Desig, SUM(TokenCount_pred) AS sum_pred
+    FROM keyed
+    WHERE {' AND '.join(wheres + ['ymdh_key BETWEEN ? AND ?']) if wheres else 'ymdh_key BETWEEN ? AND ?'}
+    GROUP BY 1,2,3
+    """
+    params += [start_key, end_key]
+
+    # Build hierarchy in Python
+    tree: Dict[str, Dict[str, Dict[str, float]]] = {}
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(q, params)
+        for t, mt, dg, s in cur.iterate():
+            t = str(t)
+            mt = str(mt).upper()
+            dg = str(dg).upper()
+            tree.setdefault(t, {}).setdefault(mt, {}).setdefault(dg, 0.0)
+            tree[t][mt][dg] += float(s or 0.0)
+
+    # Convert to [{name, value, children:[...]}] sorted by value desc
+    def to_nodes(d: Dict[str, Dict[str, Dict[str, float]]]):
+        nodes = []
+        for t, mts in d.items():
+            mt_nodes = []
+            t_total = 0.0
+            for mt, dgs in mts.items():
+                dg_nodes = [{"name": dg, "value": round(val, 2)} for dg, val in dgs.items()]
+                dg_nodes.sort(key=lambda x: x["value"], reverse=True)
+                mt_sum = round(sum(x["value"] for x in dg_nodes), 2)
+                t_total += mt_sum
+                mt_nodes.append({"name": mt, "value": mt_sum, "children": dg_nodes})
+            mt_nodes.sort(key=lambda x: x["value"], reverse=True)
+            nodes.append({"name": t, "value": round(t_total, 2), "children": mt_nodes})
+        nodes.sort(key=lambda x: x["value"], reverse=True)
+        return nodes
+
+    return {"sunburst": to_nodes(tree)}

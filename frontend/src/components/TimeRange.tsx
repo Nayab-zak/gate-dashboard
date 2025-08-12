@@ -50,8 +50,8 @@ export default function TimeRange(){
           <div className="space-y-1">
             <label className="block text-xs opacity-80">Start</label>
             <DatePicker
-              selected={start ? new Date(start) : null}
-              onChange={(d) => set({ start: Array.isArray(d) ? toLocalStr(d[0]) : toLocalStr(d) })}
+              selected={start}
+              onChange={(d: Date | null) => set({ start: toLocalStr(d) })}
               showTimeSelect
               timeIntervals={60}
               dateFormat="yyyy-MM-dd HH:mm"
@@ -62,8 +62,8 @@ export default function TimeRange(){
           <div className="space-y-1">
             <label className="block text-xs opacity-80">End</label>
             <DatePicker
-              selected={end ? new Date(end) : null}
-              onChange={(d) => set({ end: Array.isArray(d) ? toLocalStr(d[0]) : toLocalStr(d) })}
+              selected={end}
+              onChange={(d: Date | null) => set({ end: toLocalStr(d) })}
               showTimeSelect
               timeIntervals={60}
               dateFormat="yyyy-MM-dd HH:mm"

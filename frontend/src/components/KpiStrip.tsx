@@ -1,10 +1,9 @@
 import React from "react";
 import { Next8HResponse } from "@/lib/api";
 
-export default function KpiStrip({ data }: { data: Next8HResponse }) {
+export default function KpiStrip({ data, capacity }: { data: Next8HResponse; capacity: number }) {
   const total = data.horizon_hours.reduce((s, x) => s + (x.pred || 0), 0);
   const peak = data.horizon_hours.reduce((m, x) => Math.max(m, x.pred || 0), 0);
-  const capacity = data.capacity_per_hour;
   const overloadHours = data.horizon_hours.filter(h => (h.pred||0) > capacity).length;
   const tone = overloadHours >= 3 ? "bg-red-600" : overloadHours > 0 ? "bg-amber-600" : "bg-slate-800";
 
