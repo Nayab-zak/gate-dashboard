@@ -19,11 +19,11 @@ def parse_local_dt(s: str) -> datetime:
 def _base_where(terminal_id: Optional[str], move_type: Optional[str], desig: Optional[str]):
     wheres, params = [], []
     if terminal_id and terminal_id.upper() not in {"ALL", ""}:
-        wheres.append("TerminalID = ?"); params.append(terminal_id)
+        wheres.append('"TerminalID" = ?'); params.append(terminal_id)
     mt = norm_move_type(move_type)
-    if mt: wheres.append("MoveType = ?"); params.append(mt)
+    if mt: wheres.append('"MoveType" = ?'); params.append(mt)
     dg = norm_desig(desig)
-    if dg: wheres.append("Desig = ?"); params.append(dg)
+    if dg: wheres.append('"Desig" = ?'); params.append(dg)
     return wheres, params
 
 def _key_bounds(start_iso: str, end_iso: str):
@@ -41,12 +41,12 @@ def terminal_ranking(start_iso: str, end_iso: str,
 
     q = f"""
     WITH keyed AS (
-      SELECT TerminalID,
-             (CAST(TO_CHAR(MoveDate_pred,'YYYYMMDD') AS INTEGER)*100 + MoveHour_pred) AS ymdh_key,
-             TokenCount_pred
+      SELECT "TerminalID",
+             (CAST(TO_CHAR("MoveDate_pred",'YYYYMMDD') AS INTEGER)*100 + "MoveHour_pred") AS ymdh_key,
+             "TokenCount_pred"
       FROM {settings.VERTICA_TABLE_TOKENS}
     )
-    SELECT TerminalID, SUM(TokenCount_pred) AS total_pred
+    SELECT "TerminalID", SUM("TokenCount_pred") AS total_pred
     FROM keyed
     WHERE {' AND '.join(wheres + ['ymdh_key BETWEEN ? AND ?']) if wheres else 'ymdh_key BETWEEN ? AND ?'}
     GROUP BY 1
@@ -69,12 +69,12 @@ def movetype_share(start_iso: str, end_iso: str,
 
     q = f"""
     WITH keyed AS (
-      SELECT MoveType,
-             (CAST(TO_CHAR(MoveDate_pred,'YYYYMMDD') AS INTEGER)*100 + MoveHour_pred) AS ymdh_key,
-             TokenCount_pred
+      SELECT "TerminalID", "MoveType", "Desig",
+             (CAST(TO_CHAR("MoveDate_pred",'YYYYMMDD') AS INTEGER)*100 + "MoveHour_pred") AS ymdh_key,
+             "TokenCount_pred"
       FROM {settings.VERTICA_TABLE_TOKENS}
     )
-    SELECT UPPER(MoveType) AS MoveType, SUM(TokenCount_pred) AS sum_pred
+    SELECT UPPER("MoveType") AS "MoveType", SUM("TokenCount_pred") AS sum_pred
     FROM keyed
     WHERE {' AND '.join(wheres + ['ymdh_key BETWEEN ? AND ?']) if wheres else 'ymdh_key BETWEEN ? AND ?'}
     GROUP BY 1
@@ -97,12 +97,12 @@ def movetype_hourly(start_iso: str, end_iso: str,
 
     q = f"""
     WITH keyed AS (
-      SELECT MoveType, MoveDate_pred, MoveHour_pred,
-             (CAST(TO_CHAR(MoveDate_pred,'YYYYMMDD') AS INTEGER)*100 + MoveHour_pred) AS ymdh_key,
-             TokenCount_pred
+      SELECT "TerminalID", "MoveType", "Desig", "MoveDate_pred", "MoveHour_pred",
+             (CAST(TO_CHAR("MoveDate_pred",'YYYYMMDD') AS INTEGER)*100 + "MoveHour_pred") AS ymdh_key,
+             "TokenCount_pred"
       FROM {settings.VERTICA_TABLE_TOKENS}
     )
-    SELECT MoveDate_pred, MoveHour_pred, UPPER(MoveType) AS MoveType, SUM(TokenCount_pred) AS sum_pred
+    SELECT "MoveDate_pred", "MoveHour_pred", UPPER("MoveType") AS "MoveType", SUM("TokenCount_pred") AS sum_pred
     FROM keyed
     WHERE {' AND '.join(wheres + ['ymdh_key BETWEEN ? AND ?']) if wheres else 'ymdh_key BETWEEN ? AND ?'}
     GROUP BY 1,2,3
@@ -125,12 +125,12 @@ def desig_hourly(start_iso: str, end_iso: str,
 
     q = f"""
     WITH keyed AS (
-      SELECT Desig, MoveDate_pred, MoveHour_pred,
-             (CAST(TO_CHAR(MoveDate_pred,'YYYYMMDD') AS INTEGER)*100 + MoveHour_pred) AS ymdh_key,
-             TokenCount_pred
+      SELECT "TerminalID", "MoveType", "Desig", "MoveDate_pred", "MoveHour_pred",
+             (CAST(TO_CHAR("MoveDate_pred",'YYYYMMDD') AS INTEGER)*100 + "MoveHour_pred") AS ymdh_key,
+             "TokenCount_pred"
       FROM {settings.VERTICA_TABLE_TOKENS}
     )
-    SELECT MoveDate_pred, MoveHour_pred, UPPER(Desig) AS Desig, SUM(TokenCount_pred) AS sum_pred
+    SELECT "MoveDate_pred", "MoveHour_pred", UPPER("Desig") AS "Desig", SUM("TokenCount_pred") AS sum_pred
     FROM keyed
     WHERE {' AND '.join(wheres + ['ymdh_key BETWEEN ? AND ?']) if wheres else 'ymdh_key BETWEEN ? AND ?'}
     GROUP BY 1,2,3
@@ -153,12 +153,12 @@ def terminal_hour_heatmap(start_iso: str, end_iso: str,
 
     q = f"""
     WITH keyed AS (
-      SELECT TerminalID, MoveHour_pred,
-             (CAST(TO_CHAR(MoveDate_pred,'YYYYMMDD') AS INTEGER)*100 + MoveHour_pred) AS ymdh_key,
-             TokenCount_pred
+      SELECT "TerminalID", "MoveHour_pred",
+             (CAST(TO_CHAR("MoveDate_pred",'YYYYMMDD') AS INTEGER)*100 + "MoveHour_pred") AS ymdh_key,
+             "TokenCount_pred"
       FROM {settings.VERTICA_TABLE_TOKENS}
     )
-    SELECT TerminalID, MoveHour_pred, SUM(TokenCount_pred) AS sum_pred
+    SELECT "TerminalID", "MoveHour_pred", SUM("TokenCount_pred") AS sum_pred
     FROM keyed
     WHERE {' AND '.join(wheres + ['ymdh_key BETWEEN ? AND ?']) if wheres else 'ymdh_key BETWEEN ? AND ?'}
     GROUP BY 1,2
@@ -209,14 +209,14 @@ def sunburst(
     q = f"""
     WITH keyed AS (
       SELECT
-        TerminalID,
-        UPPER(MoveType) AS MoveType,
-        UPPER(COALESCE(NULLIF(Desig, ''), 'UNK')) AS Desig,
-        (CAST(TO_CHAR(MoveDate_pred,'YYYYMMDD') AS INTEGER)*100 + MoveHour_pred) AS ymdh_key,
-        TokenCount_pred
+        "TerminalID",
+        UPPER("MoveType") AS "MoveType",
+        UPPER(COALESCE(NULLIF("Desig", ''), 'UNK')) AS "Desig",
+        (CAST(TO_CHAR("MoveDate_pred",'YYYYMMDD') AS INTEGER)*100 + "MoveHour_pred") AS ymdh_key,
+        "TokenCount_pred"
       FROM {settings.VERTICA_TABLE_TOKENS}
     )
-    SELECT TerminalID, MoveType, Desig, SUM(TokenCount_pred) AS sum_pred
+    SELECT "TerminalID", "MoveType", "Desig", SUM("TokenCount_pred") AS sum_pred
     FROM keyed
     WHERE {' AND '.join(wheres + ['ymdh_key BETWEEN ? AND ?']) if wheres else 'ymdh_key BETWEEN ? AND ?'}
     GROUP BY 1,2,3
@@ -253,3 +253,53 @@ def sunburst(
         return nodes
 
     return {"sunburst": to_nodes(tree)}
+# --- Composition by terminal (percent) --------------------------------------
+@router.get("/composition_by_terminal")
+def composition_by_terminal(
+    start_iso: str,
+    end_iso: str,
+    dim: str = "desig",                 # "desig" | "movetype"
+    terminal_id: Optional[str] = None,  # "ALL" or specific
+    move_type: Optional[str] = None,    # overall filter
+    desig: Optional[str] = None         # overall filter
+):
+    """
+    Returns totals by TerminalID x (dim) within the window.
+    dim = 'desig'  -> keys: EMPTY/FULL/EXP (or UNK)
+    dim = 'movetype' -> keys: IN/OUT
+    Client can normalize to 100% (recommended).
+    """
+    start_key, end_key = _key_bounds(start_iso, end_iso)
+    # treat "ALL" as no filter
+    wheres, params = _base_where(terminal_id, move_type, desig)
+    dim = dim.lower()
+    if dim not in ("desig", "movetype"):
+        dim = "desig"
+
+    dim_col = "UPPER(COALESCE(NULLIF(Desig, ''), 'UNK'))" if dim == "desig" else "UPPER(MoveType)"
+
+    q = f"""
+    WITH keyed AS (
+      SELECT
+        TerminalID,
+        {dim_col} AS K,
+        (CAST(TO_CHAR(MoveDate_pred,'YYYYMMDD') AS INTEGER)*100 + MoveHour_pred) AS ymdh_key,
+        TokenCount_pred
+      FROM {settings.VERTICA_TABLE_TOKENS}
+    )
+    SELECT TerminalID, K, SUM(TokenCount_pred) AS sum_pred
+    FROM keyed
+    WHERE {' AND '.join(wheres + ['ymdh_key BETWEEN ? AND ?']) if wheres else 'ymdh_key BETWEEN ? AND ?'}
+    GROUP BY 1,2
+    ORDER BY 1,2
+    """
+    params += [start_key, end_key]
+
+    rows = []
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(q, params)
+        for t, k, s in cur.iterate():
+            rows.append({"terminal": str(t), "key": str(k).upper(), "pred": float(s or 0.0)})
+
+    return {"dim": dim, "rows": rows}

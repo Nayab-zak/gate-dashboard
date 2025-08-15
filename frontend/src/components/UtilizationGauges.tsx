@@ -8,7 +8,7 @@ export default function UtilizationGauges({ items }:{
 }) {
   // show up to 8 per row
   const option = {
-    title: { text: "Utilization by terminal (peak in window)", left: "center", textStyle:{color:"#cfd7f2", fontSize:12}},
+    title: { text: "Terminal Capacity Utilization (peak forecast)", left: "center", textStyle:{color:"#cfd7f2", fontSize:12}},
     grid: { top: 36 },
     series: items.map((it, idx) => ({
       type: "gauge",
@@ -25,5 +25,5 @@ export default function UtilizationGauges({ items }:{
       data: [{ value: Math.round(it.utilizationPct), name: it.terminal }]
     }))
   };
-  return <div className="card"><h3>Utilization</h3><ReactECharts option={option} style={{height: items.length<=4 ? 260 : 500}} /></div>;
+  return <div className="card"><h3>Terminal Capacity Utilization</h3><ReactECharts option={option} style={{height: items.length<=4 ? 260 : 500}} /></div>;
 }

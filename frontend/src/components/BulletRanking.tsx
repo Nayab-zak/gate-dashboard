@@ -3,10 +3,11 @@
 import React from "react";
 import ReactECharts from "echarts-for-react";
 
-export default function BulletRanking({ totals, capacityPerHour, hours }:{
+export default function BulletRanking({ totals, capacityPerHour, hours, subtitle }:{
   totals: { terminal:string; total_pred:number }[];
   capacityPerHour: number;
   hours: number;                     // window length in hours
+  subtitle?: string;                 // Optional subtitle for context
 }) {
   // Debug logging
   console.log("BulletRanking data:", { totals, capacityPerHour, hours });
@@ -35,8 +36,8 @@ export default function BulletRanking({ totals, capacityPerHour, hours }:{
 
   const option = {
     title: { 
-      text: "Terminal totals (ranking)", 
-      subtext: "Sum of TokenCount_pred over selected window",
+      text: "Terminal Performance Ranking", 
+      subtext: subtitle || `Container volume forecast over ${hours}h period`,
       textStyle: { 
         color: "#f1f5f9", 
         fontSize: 14,
@@ -140,7 +141,7 @@ export default function BulletRanking({ totals, capacityPerHour, hours }:{
         const terminal = p[1]?.name;
         const total = p[1]?.data;
         const pct = ((total / maxTotal) * 100).toFixed(1);
-        return `<strong>${terminal}</strong><br/>Total tokens: <span style="color: #60a5fa">${total.toLocaleString()}</span><br/>% of max: <span style="color: #34d399">${pct}%</span>`;
+        return `<strong>${terminal}</strong><br/>Total volume: <span style="color: #60a5fa">${total.toLocaleString()}</span><br/>% of peak terminal: <span style="color: #34d399">${pct}%</span>`;
       }
     },
     legend: { 
@@ -150,7 +151,7 @@ export default function BulletRanking({ totals, capacityPerHour, hours }:{
   
   return (
     <div className="card">
-      <h3>Terminal ranking (bullet)</h3>
+      <h3>Terminal Performance Ranking</h3>
       <ReactECharts option={option} style={{height: 380}} />
     </div>
   );

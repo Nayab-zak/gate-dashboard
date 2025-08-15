@@ -13,7 +13,7 @@ def freshness():
     q = f"""
     SELECT MAX(updated_at), COUNT(*)
     FROM {settings.VERTICA_TABLE_TOKENS}
-    WHERE MoveDate_pred >= CURRENT_DATE - INTERVAL '1 day'
+    WHERE "MoveDate_pred" >= CURRENT_DATE - INTERVAL '1 day'
     """
     with get_conn() as conn:
         cur = conn.cursor()

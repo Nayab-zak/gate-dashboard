@@ -44,8 +44,8 @@ export default function DesigStackedArea({ points }:{ points:{date:string; hour:
   const option = {
     backgroundColor: 'transparent',
     title: { 
-      text: "Designation composition (hourly)", 
-      subtext: isEmpty ? "No designation data available" : !hasData ? "All values are zero" : "",
+      text: "Gate Load Status by Hour", 
+      subtext: isEmpty ? "No gate status data available" : !hasData ? "All values are zero" : "",
       textStyle: { 
         color: "#f1f5f9", 
         fontSize: 14,
@@ -99,13 +99,13 @@ export default function DesigStackedArea({ points }:{ points:{date:string; hour:
   
   return (
     <div className="card relative">
-      <h3>Desig over time</h3>
+      <h3>Gate Load Status Over Time</h3>
       <ReactECharts option={option} style={{height: 360}} />
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">
           <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
             <div className="text-slate-200 text-sm text-center font-medium">
-              No designation data available
+              No gate status data available
             </div>
             <div className="text-slate-400 text-xs mt-1 text-center">
               Adjust time range or filters

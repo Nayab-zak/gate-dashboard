@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchNext8h, fetchRange, getTerminalRanking, getMoveTypeShare, getMoveTypeHourly, getDesigHourly, getTerminalHourHeatmap, getSunburst } from "@/lib/api";
 import KpiStrip from "@/components/KpiStrip";
 import FanChart from "@/components/FanChart";
-import CapacityPanel from "@/components/CapacityPanel";
 import FilterRail from "@/components/FilterRail";
 import TimeRange from "@/components/TimeRange";
 import TodayTimeline from "@/components/TodayTimeline";
@@ -20,6 +19,9 @@ import CompositionSunburst from "@/components/CompositionSunburst";
 import InsightsBox from "@/components/InsightsBox";
 import UtilizationGauges from "@/components/UtilizationGauges";
 import { useSearchParams } from "next/navigation";
+import Composition100Stack from "@/components/Composition100Stack";
+import { getCompositionByTerminal } from "@/lib/api";
+
 
 function computeWindow(mode: string, start: string, end: string) {
   if (mode === "custom" && start && end) {
@@ -52,6 +54,8 @@ export default function Page(){
   const mode = modeRaw === "range" ? "custom" : modeRaw; // Accept old URLs
   const start = sp.get("start") || "";
   const end   = sp.get("end")   || "";
+  const rankingDim = sp.get("rankingdim") || "total"; // New dimension switcher: "total" or "average"
+  const dim = (sp.get("compdim") || "desig").toLowerCase() as "desig"|"movetype";
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["forecast", mode, terminal, moveType, desig, start, end],
@@ -133,6 +137,33 @@ export default function Page(){
     refetchInterval: mode === "next8h" || mode === "today" ? 60_000 : false,
   });
 
+  const qComp = useQuery({
+    queryKey: ["comp_by_terminal", startStr, endStr, dim, terminal, moveType, desig],
+    queryFn: () => getCompositionByTerminal(startStr, endStr, dim, terminal, moveType, desig),
+    refetchInterval: mode === "next8h" || mode === "today" ? 60_000 : false,
+  });
+
+  // Calculate the number of hours in the selected time window
+  const windowHours = (() => {
+    try {
+      const start = new Date(startStr);
+      const end = new Date(endStr);
+      return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60)));
+    } catch {
+      return 1; // Fallback to prevent division by zero
+    }
+  })();
+
+  // Transform ranking data based on dimension selection
+  const transformedRanking = qRanking.data?.ranking ? {
+    ranking: qRanking.data.ranking.map((item: any) => ({
+      ...item,
+      total_pred: rankingDim === "average" 
+        ? Math.round((item.total_pred / windowHours) * 100) / 100 // Average per hour, rounded to 2 decimals
+        : item.total_pred // Keep original total
+    }))
+  } : null;
+
   // Compute inputs for new charts
   
   // Utilization gauges need peak utilization by terminal
@@ -177,15 +208,57 @@ export default function Page(){
             <InsightsBox forecast={data} share={qShare.data?.share} ranking={qRanking.data?.ranking} />
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <FanChart rows={data.horizon_hours} title={mode==="custom" ? "Forecast for selected range" : "Next 8h Forecast"} capacity={capacity} />
-              <CapacityPanel rows={data.horizon_hours} capacity={capacity} />
+              <FanChart rows={data.horizon_hours} title={mode==="custom" ? "Demand Forecast - Selected Period" : "Demand Forecast - Next 8 Hours"} capacity={capacity} />
+              {qDesig.data && <DesigStackedArea points={qDesig.data.points} />}
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {qRanking.data && <BulletRanking totals={qRanking.data.ranking} capacityPerHour={capacity} hours={data.horizon_hours.length} />}
+              {transformedRanking && (
+                <div className="space-y-4">
+                  {/* Dimension Switcher */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-600">View Mode:</span>
+                    <div className="flex bg-gray-100 rounded-md p-1">
+                      <a 
+                        href={`?${new URLSearchParams({...Object.fromEntries(sp.entries()), rankingdim: 'total'}).toString()}`}
+                        className={`px-3 py-1 rounded transition-colors ${
+                          rankingDim === 'total' 
+                            ? 'bg-blue-500 text-white' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Total Period ({windowHours}h)
+                      </a>
+                      <a 
+                        href={`?${new URLSearchParams({...Object.fromEntries(sp.entries()), rankingdim: 'average'}).toString()}`}
+                        className={`px-3 py-1 rounded transition-colors ${
+                          rankingDim === 'average' 
+                            ? 'bg-blue-500 text-white' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Hourly Average
+                      </a>
+                    </div>
+                  </div>
+                  <BulletRanking 
+                    totals={transformedRanking.ranking} 
+                    capacityPerHour={capacity} 
+                    hours={rankingDim === 'average' ? 1 : windowHours}
+                    subtitle={rankingDim === 'average' ? 'Average containers per hour by terminal' : `Total containers over ${windowHours}h period by terminal`}
+                  />
+                </div>
+              )}
               <HourWheel hourly={hourList} />
               {qSun.data && <CompositionSunburst data={qSun.data.sunburst} />}
             </div>
+
+            {/* Composition Chart */}
+            {qComp.data && (
+              <div className="grid grid-cols-1 gap-6">
+                <Composition100Stack dim={qComp.data.dim} rows={qComp.data.rows} />
+              </div>
+            )}
 
             {/* Optional, keep if space allows */}
             {qHeat.data && <PrettyHeatmap cells={qHeat.data.cells} />}

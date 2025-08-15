@@ -30,8 +30,8 @@ export default function CompositionSunburst({ data }:{ data: Node[] }) {
   const option = {
     backgroundColor: 'transparent',
     title: { 
-      text: "Composition (Terminal → MoveType → Desig)", 
-      subtext: isEmpty ? "No composition data available" : !hasData ? "All values are zero" : "",
+      text: "Operations Breakdown by Terminal", 
+      subtext: isEmpty ? "No operations data available" : !hasData ? "All values are zero" : "",
       left: "center", 
       textStyle: { 
         color: "#f1f5f9", 
@@ -45,16 +45,34 @@ export default function CompositionSunburst({ data }:{ data: Node[] }) {
     },
     series: [{
       type: "sunburst",
-      radius: [0, "85%"],
+      radius: [20, "85%"], // Add inner radius for better center visibility
       label: { 
         rotate: "radial", 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
-        fontSize: isEmpty ? 10 : 12
+        color: isEmpty ? "#64748b" : "#ffffff",
+        fontSize: isEmpty ? 10 : 13,
+        fontWeight: "bold",
+        // Add text stroke for better contrast
+        textBorderColor: "#000000",
+        textBorderWidth: 1,
+        distance: 5
       },
       itemStyle: { 
-        borderColor: "#0b0f1a", 
+        borderColor: "#0f172a", // Darker border for better contrast
         borderWidth: 2,
-        opacity: isEmpty ? 0.3 : 1
+        opacity: isEmpty ? 0.3 : 0.9,
+        // Add shadow for depth
+        shadowBlur: 3,
+        shadowColor: "rgba(0, 0, 0, 0.3)"
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowColor: "rgba(0, 0, 0, 0.5)"
+        },
+        label: {
+          fontSize: 14,
+          fontWeight: "bold"
+        }
       },
       data: sunburstData,
       silent: isEmpty
@@ -77,7 +95,7 @@ export default function CompositionSunburst({ data }:{ data: Node[] }) {
   
   return (
     <div className="card relative">
-      <h3>Composition</h3>
+      <h3>Operations Breakdown</h3>
       <ReactECharts option={option} style={{height: 360}} />
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">

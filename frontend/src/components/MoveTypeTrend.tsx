@@ -30,8 +30,8 @@ export default function MoveTypeTrend({ points }:{ points:{date:string; hour:num
   const option = {
     backgroundColor: 'transparent',
     title: { 
-      text: "IN vs OUT — hourly trend", 
-      subtext: isEmpty ? "No move type data available" : !hasData ? "All values are zero" : "",
+      text: "Container Flow Trends - Incoming vs Outgoing", 
+      subtext: isEmpty ? "No container flow data available" : !hasData ? "All values are zero" : "",
       textStyle: { 
         color: "#f1f5f9", 
         fontSize: 14,
@@ -118,7 +118,7 @@ export default function MoveTypeTrend({ points }:{ points:{date:string; hour:num
   
   return (
     <div className="card relative">
-      <h3>MoveType hourly trend</h3>
+      <h3>Container Flow Trends</h3>
       <ReactECharts option={option} style={{height: 360}} />
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">

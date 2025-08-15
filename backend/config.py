@@ -2,8 +2,12 @@
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
-load_dotenv()  # loads from nearest .env
+# Load .env from the backend directory
+backend_dir = Path(__file__).parent
+env_path = backend_dir / '.env'
+load_dotenv(env_path)
 
 class Settings(BaseModel):
     VERTICA_HOST: str = os.getenv("VERTICA_HOST", "localhost")

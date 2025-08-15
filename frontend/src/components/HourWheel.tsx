@@ -42,8 +42,8 @@ export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:numbe
   const option = {
     backgroundColor: 'transparent',
     title: { 
-      text: "Hour wheel", 
-      subtext: isEmpty ? "No data available" : "Hourly intensity distribution",
+      text: "Daily Activity Pattern", 
+      subtext: isEmpty ? "No activity data available" : "Container flow by hour of day",
       left: "center", 
       top: 10,
       textStyle: { 
@@ -174,7 +174,7 @@ export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:numbe
   
   return (
     <div className="card relative">
-      <h3>Hourly intensity (polar)</h3>
+      <h3>Daily Activity Pattern</h3>
       <ReactECharts option={option} style={{height: 360}} />
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">

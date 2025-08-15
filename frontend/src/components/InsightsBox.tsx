@@ -20,14 +20,14 @@ export default function InsightsBox({ forecast, share, ranking }: Inputs) {
 
   return (
     <div className="card">
-      <h3>Insights</h3>
+      <h3>Key Insights</h3>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-        <Insight label="Total tokens (window)" value={total} />
-        <Insight label="Peak hour" value={peak.ts ? `${new Date(peak.ts).toLocaleTimeString([], {hour:"2-digit"})} • ${Math.round(peak.pred||0)}` : `${Math.round(peak.pred||0)}`} />
-        <Insight label="Overload hours" value={`${overload.length}`} tone={overload.length>=3?"red":overload.length>0?"amber":"slate"} />
-        <Insight label="Dominant MoveType" value={mtDom} />
-        <Insight label="Busiest terminal" value={winnerTerminal || "—"} />
-        <Insight label="Risk" value={risk} tone={risk.startsWith("High")?"red":risk.includes("Overload")?"amber":"green"} />
+        <Insight label="Total Volume Forecast" value={total} />
+        <Insight label="Peak Activity Hour" value={peak.ts ? `${new Date(peak.ts).toLocaleTimeString([], {hour:"2-digit"})} • ${Math.round(peak.pred||0)}` : `${Math.round(peak.pred||0)}`} />
+        <Insight label="Capacity Alerts" value={`${overload.length} hours`} tone={overload.length>=3?"red":overload.length>0?"amber":"slate"} />
+        <Insight label="Primary Flow Type" value={mtDom} />
+        <Insight label="Busiest Terminal" value={winnerTerminal || "—"} />
+        <Insight label="Capacity Risk Level" value={risk} tone={risk.startsWith("High")?"red":risk.includes("Overload")?"amber":"green"} />
       </div>
     </div>
   );

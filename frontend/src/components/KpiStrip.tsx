@@ -9,10 +9,10 @@ export default function KpiStrip({ data, capacity }: { data: Next8HResponse; cap
 
   return (
     <div className="grid grid-cols-4 gap-4">
-      <Tile label="Next 8h Tokens" value={total.toFixed(0)} />
-      <Tile label="Peak / hr" value={peak.toFixed(0)} />
-      <Tile label="Overload hours" value={`${overloadHours}/8`} className={tone} />
-      <Tile label="Data freshness" value={new Date(data.updated_at).toLocaleTimeString()} />
+      <Tile label="Total Forecast Volume" value={total.toFixed(0)} />
+      <Tile label="Peak Hour Volume" value={peak.toFixed(0)} />
+      <Tile label="Capacity Alerts" value={`${overloadHours}/8`} className={tone} />
+      <Tile label="Data Updated" value={new Date(data.updated_at).toLocaleTimeString()} />
     </div>
   );
 }

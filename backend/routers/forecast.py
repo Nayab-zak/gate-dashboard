@@ -41,12 +41,12 @@ def next8h(
     start_key = int(start.strftime("%Y%m%d%H"))
     end_key   = int(end.strftime("%Y%m%d%H"))
 
-    wheres = ["TerminalID = ?"]
+    wheres = ['TerminalID = ?']
     params: List = [terminal_id]
     if mt:
-        wheres.append("MoveType = ?"); params.append(mt)
+        wheres.append('MoveType = ?'); params.append(mt)
     if dg:
-        wheres.append("Desig = ?"); params.append(dg)
+        wheres.append('Desig = ?'); params.append(dg)
 
     # Build the synthetic key in SQL: YYYYMMDD * 100 + hour
     # Vertica: EXTRACT functions + LPAD are fine; here we do arithmetic to stay numeric.
@@ -160,27 +160,27 @@ def range_hours(
     mt = norm_move_type(move_type) if move_type else None
     dg = norm_desig(desig) if desig else None
 
-    wheres = ["TerminalID = ?"]
+    wheres = ['"TerminalID" = ?']
     params: List = [terminal_id]
     if mt:
-        wheres.append("MoveType = ?"); params.append(mt)
+        wheres.append('"MoveType" = ?'); params.append(mt)
     if dg:
-        wheres.append("Desig = ?"); params.append(dg)
+        wheres.append('"Desig" = ?'); params.append(dg)
 
     q = f"""
     WITH keyed AS (
       SELECT
-        TerminalID, MoveType, Desig,
-        MoveDate_pred, MoveHour_pred,
-        (CAST(TO_CHAR(MoveDate_pred, 'YYYYMMDD') AS INTEGER) * 100 + MoveHour_pred) AS ymdh_key,
-        TokenCount_pred, TokenCount_true, updated_at
+        "TerminalID", "MoveType", "Desig",
+        "MoveDate_pred", "MoveHour_pred",
+        (CAST(TO_CHAR("MoveDate_pred", 'YYYYMMDD') AS INTEGER) * 100 + "MoveHour_pred") AS ymdh_key,
+        "TokenCount_pred", "TokenCount_true", updated_at
       FROM {settings.VERTICA_TABLE_TOKENS}
     )
-    SELECT TerminalID, MoveType, Desig, MoveDate_pred, MoveHour_pred,
-           TokenCount_pred, TokenCount_true, updated_at
+    SELECT "TerminalID", "MoveType", "Desig", "MoveDate_pred", "MoveHour_pred",
+           "TokenCount_pred", "TokenCount_true", updated_at
     FROM keyed
     WHERE {' AND '.join(wheres)} AND ymdh_key BETWEEN ? AND ?
-    ORDER BY MoveDate_pred, MoveHour_pred
+    ORDER BY "MoveDate_pred", "MoveHour_pred"
     """
     params.extend([start_key, end_key])
 

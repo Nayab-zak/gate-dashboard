@@ -29,8 +29,8 @@ export default function PrettyHeatmap({ cells }:{ cells:{terminal:string; hour:n
   const option = {
     backgroundColor: 'transparent',
     title: { 
-      text: "Terminal × Hour (window total)", 
-      subtext: isEmpty ? "No heatmap data available" : hasData ? "" : "All values are zero",
+      text: "Peak Activity Times by Terminal", 
+      subtext: isEmpty ? "No activity data available" : hasData ? "" : "All values are zero",
       textStyle: { 
         color: "#f1f5f9", 
         fontSize: 14,
@@ -113,7 +113,7 @@ export default function PrettyHeatmap({ cells }:{ cells:{terminal:string; hour:n
   
   return (
     <div className="card relative">
-      <h3>Hot hours by terminal</h3>
+      <h3>Peak Activity Times by Terminal</h3>
       <ReactECharts option={option} style={{height: 420}} />
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">

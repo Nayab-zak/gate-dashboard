@@ -99,3 +99,12 @@ export async function getSunburst(start: string, end: string, terminal: string, 
   const r = await api.get("/analytics/sunburst", { params });
   return r.data as { sunburst: SunNode[] };
 }
+
+export async function getCompositionByTerminal(start: string, end: string, dim: "desig"|"movetype", terminal: string, moveType: string, desig: string) {
+  const params: any = { start_iso: start, end_iso: end, dim };
+  if (terminal) params.terminal_id = terminal;
+  if (moveType) params.move_type = moveType;
+  if (desig) params.desig = desig;
+  const r = await api.get("/analytics/composition_by_terminal", { params });
+  return r.data as { dim: "desig"|"movetype"; rows: {terminal:string; key:string; pred:number}[] };
+}
