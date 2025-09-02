@@ -35,7 +35,9 @@ This project is a Predictive Analytics Dashboard designed to visualize and analy
    ```
 3. Access the dashboard at `http://localhost:3000`.
 
+
 ## Backend Endpoints
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 - `/analytics`: Provides analytics data.
 - `/capacity`: Capacity-related data.
 - `/forecast`: Forecast data for terminals.

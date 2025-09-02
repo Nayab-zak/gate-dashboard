@@ -2,8 +2,25 @@
 "use client";
 import React from "react";
 import ReactECharts from "echarts-for-react";
+import { useTheme } from "./ThemeProvider";
 
 export default function DesigStackedArea({ points }:{ points:{date:string; hour:number; desig:string; pred:number}[] }) {
+  const { theme } = useTheme();
+  
+  // Debug logging
+  console.log("=== DesigStackedArea Debug ===");
+  console.log("Received points:", points);
+  console.log("Points length:", points.length);
+  
+  // Theme-aware colors
+  const colors = {
+    axisText: theme === 'light' ? '#002F6C' : '#ffffff',
+    legendText: theme === 'light' ? '#002F6C' : '#ffffff',
+    gridLines: '#B3B3B3',
+    tooltipBg: theme === 'light' ? '#FFFFFF' : '#0E2F51',
+    tooltipBorder: theme === 'light' ? '#002F6C20' : '#ffffff20',
+    tooltipText: theme === 'light' ? '#002F6C' : '#ffffff'
+  };
   // Check for empty data
   const isEmpty = !points || points.length === 0;
   const hasData = !isEmpty && points.some(p => p.pred > 0);
@@ -30,46 +47,41 @@ export default function DesigStackedArea({ points }:{ points:{date:string; hour:
   } else {
     hours = Array.from(new Set(points.map(p=>p.hour))).sort((a,b)=>a-b);
     desigs = Array.from(new Set(points.map(p=>p.desig))).sort();
+    
+    console.log("Processed hours:", hours);
+    console.log("Processed desigs:", desigs);
+    
     series = desigs.map(dg => ({
       name: dg, type: "line", stack: "total", areaStyle: {}, symbol:"none",
       data: hours.map(h=> {
         const f = points.find(p=>p.hour===h && p.desig===dg);
-        return f? Math.round(f.pred) : 0;
+        const value = f? Math.round(f.pred) : 0;
+        console.log(`Hour ${h}, Desig ${dg}: ${value} (from point:`, f, ")");
+        return value;
       }),
       lineStyle: { width: 2 },
       smooth: true
     }));
+    
+    console.log("Final series data:", series);
   }
   
   const option = {
     backgroundColor: 'transparent',
-    title: { 
-      text: "Gate Load Status by Hour", 
-      subtext: isEmpty ? "No gate status data available" : !hasData ? "All values are zero" : "",
-      textStyle: { 
-        color: "#f1f5f9", 
-        fontSize: 14,
-        fontWeight: 'bold'
-      },
-      subtextStyle: { 
-        color: "#cbd5e1", 
-        fontSize: 10
-      }
-    },
-    grid: { left:48, right:20, top:36, bottom:32 },
+    grid: { left:48, right:20, top:20, bottom:32 },
     tooltip: isEmpty ? { show: false } : { 
       trigger:"axis",
-      backgroundColor: '#1f2937',
-      borderColor: '#374151',
+      backgroundColor: colors.tooltipBg,
+      borderColor: colors.tooltipBorder,
       borderWidth: 1,
       textStyle: {
-        color: '#f9fafb',
+        color: colors.tooltipText,
         fontSize: 12
       }
     },
     legend: { 
       textStyle: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
+        color: colors.legendText,
         fontSize: 11
       }
     },
@@ -77,37 +89,47 @@ export default function DesigStackedArea({ points }:{ points:{date:string; hour:
       type:"category", 
       data: hours.map(h=>`${String(h).padStart(2,"0")}:00`), 
       axisLabel: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
+        color: colors.axisText,
         fontSize: 11,
         fontWeight: '500'
       },
-      axisLine: { lineStyle: { color: "#64748b", width: 2 } }
+      axisLine: { lineStyle: { color: colors.gridLines, width: 2 } }
     },
     yAxis: { 
       type:"value", 
       min:0, 
       axisLabel: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
+        color: colors.axisText,
         fontSize: 10,
         fontWeight: '500'
       }, 
-      splitLine: { lineStyle: { color: "#475569", width: 1 } },
-      axisLine: { lineStyle: { color: "#64748b", width: 2 } }
+      splitLine: { lineStyle: { color: colors.gridLines, width: 1, opacity: 0.3 } },
+      axisLine: { lineStyle: { color: colors.gridLines, width: 2 } }
     },
     series
   };
   
   return (
-    <div className="card relative">
-      <h3>Gate Load Status Over Time</h3>
-      <ReactECharts option={option} style={{height: 360}} />
+    <div className="h-full flex flex-col">
+      <h3 className="card-header">Gate Load Status Over Time</h3>
+      <div className="card-body flex-1">
+        <ReactECharts 
+          option={option} 
+          style={{
+            width: '100%',
+            height: '100%',
+            minHeight: '300px'
+          }}
+          opts={{ renderer: 'canvas' }}
+        />
+      </div>
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
-            <div className="text-slate-200 text-sm text-center font-medium">
+          <div className="bg-theme-card/90 backdrop-blur-sm rounded-lg p-4 border border-theme-border">
+            <div className="text-theme-text text-sm text-center font-medium">
               No gate status data available
             </div>
-            <div className="text-slate-400 text-xs mt-1 text-center">
+            <div className="text-theme-text-secondary text-xs mt-1 text-center">
               Adjust time range or filters
             </div>
           </div>

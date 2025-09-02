@@ -2,8 +2,20 @@
 "use client";
 import React from "react";
 import ReactECharts from "echarts-for-react";
+import { useTheme } from "./ThemeProvider";
 
 export default function PrettyHeatmap({ cells }:{ cells:{terminal:string; hour:number; pred:number}[] }) {
+  const { theme } = useTheme();
+  
+  // Theme-aware colors
+  const colors = {
+    axisText: theme === 'light' ? '#002F6C' : '#e2e8f0',
+    axisLine: theme === 'light' ? '#002F6C' : '#64748b',
+    visualMapText: theme === 'light' ? '#002F6C' : '#e2e8f0',
+    tooltipBg: theme === 'light' ? '#FFFFFF' : '#1f2937',
+    tooltipBorder: theme === 'light' ? '#002F6C20' : '#374151',
+    heatmapBorder: theme === 'light' ? '#002F6C20' : '#1e293b'
+  };
   // Check for empty data
   const isEmpty = !cells || cells.length === 0;
   const hasData = !isEmpty && cells.some(c => c.pred > 0);
@@ -28,32 +40,19 @@ export default function PrettyHeatmap({ cells }:{ cells:{terminal:string; hour:n
 
   const option = {
     backgroundColor: 'transparent',
-    title: { 
-      text: "Peak Activity Times by Terminal", 
-      subtext: isEmpty ? "No activity data available" : hasData ? "" : "All values are zero",
-      textStyle: { 
-        color: "#f1f5f9", 
-        fontSize: 14,
-        fontWeight: 'bold'
-      },
-      subtextStyle: { 
-        color: "#cbd5e1", 
-        fontSize: 10
-      }
-    },
-    grid: { left: 110, right: 20, top: 36, bottom: 50 },
+    grid: { left: 110, right: 20, top: 20, bottom: 50 },
     xAxis: { 
       type: "category", 
       data: hours.map(h=>`${String(h).padStart(2,"0")}`), 
       axisLabel: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
+        color: colors.axisText,
         fontSize: 11,
         fontWeight: '500'
       },
       axisLine: {
         show: true,
         lineStyle: {
-          color: "#64748b"
+          color: colors.axisLine
         }
       }
     },
@@ -61,22 +60,22 @@ export default function PrettyHeatmap({ cells }:{ cells:{terminal:string; hour:n
       type: "category", 
       data: terminals, 
       axisLabel: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
+        color: colors.axisText,
         fontSize: 11,
         fontWeight: '500'
       },
       axisLine: {
         show: true,
         lineStyle: {
-          color: "#64748b"
+          color: colors.axisLine
         }
       }
     },
     visualMap: {
       min: 0, max: vmax, calculable: true, orient: "horizontal", left: "center", bottom: 10,
-      inRange: { color: isEmpty ? ["#374151", "#374151"] : ["#0f172a", "#1e3a8a", "#2563eb", "#38bdf8", "#fbbf24"] },
+      inRange: { color: isEmpty ? ["#374151", "#374151"] : ["#0f172a", "#1e3a8a", "#2563eb", "#38bdf8", "#10b981"] },
       textStyle: { 
-        color: "#e2e8f0",
+        color: colors.visualMapText,
         fontSize: 11,
         fontWeight: '500'
       },
@@ -95,11 +94,11 @@ export default function PrettyHeatmap({ cells }:{ cells:{terminal:string; hour:n
       silent: isEmpty
     }],
     tooltip: isEmpty ? { show: false } : { 
-      backgroundColor: '#1f2937',
-      borderColor: '#374151',
+      backgroundColor: colors.tooltipBg,
+      borderColor: colors.tooltipBorder,
       borderWidth: 1,
       textStyle: {
-        color: '#f9fafb',
+        color: theme === 'light' ? '#002F6C' : '#f9fafb',
         fontSize: 12
       },
       formatter: (p:any)=> {
@@ -112,16 +111,26 @@ export default function PrettyHeatmap({ cells }:{ cells:{terminal:string; hour:n
   };
   
   return (
-    <div className="card relative">
-      <h3>Peak Activity Times by Terminal</h3>
-      <ReactECharts option={option} style={{height: 420}} />
+    <div className="h-full flex flex-col">
+      <h3 className="card-header">Peak Activity Times by Terminal</h3>
+      <div className="card-body flex-1">
+        <ReactECharts 
+          option={option} 
+          style={{
+            width: '100%',
+            height: '100%',
+            minHeight: '300px'
+          }}
+          opts={{ renderer: 'canvas' }}
+        />
+      </div>
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
-            <div className="text-slate-200 text-sm text-center font-medium">
+          <div className="bg-theme-card/90 backdrop-blur-sm rounded-lg p-4 border border-theme-border">
+            <div className="text-theme-text text-sm text-center font-medium">
               No terminal activity data
             </div>
-            <div className="text-slate-400 text-xs mt-1 text-center">
+            <div className="text-theme-text-secondary text-xs mt-1 text-center">
               Adjust time range or filters
             </div>
           </div>

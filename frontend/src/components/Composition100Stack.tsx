@@ -2,10 +2,19 @@
 "use client";
 import React from "react";
 import ReactECharts from "echarts-for-react";
+import { useTheme } from "./ThemeProvider";
 
 type Row = { terminal: string; key: string; pred: number };
 
 export default function Composition100Stack({ dim, rows }:{ dim: "desig"|"movetype"; rows: Row[] }) {
+  const { theme } = useTheme();
+  
+  // Theme-aware colors
+  const colors = {
+    axisText: theme === 'light' ? '#002F6C' : '#b7c3e0',
+    legendText: theme === 'light' ? '#002F6C' : '#cfd7f2',
+    gridLines: theme === 'light' ? '#002F6C30' : '#1f2a44'
+  };
   // terminals sorted by total pred
   const totalsByT: Record<string, number> = {};
   rows.forEach(r => totalsByT[r.terminal] = (totalsByT[r.terminal] || 0) + r.pred);
@@ -43,8 +52,7 @@ export default function Composition100Stack({ dim, rows }:{ dim: "desig"|"movety
                                 : "Container Flow Distribution by Terminal (% of total volume)";
 
   const option = {
-    title: { text: title, textStyle:{ color:"#cfd7f2", fontSize: 12 } },
-    grid: { left: 120, right: 20, top: 36, bottom: 32 },
+    grid: { left: 120, right: 20, top: 20, bottom: 32 },
     tooltip: {
       trigger: "axis",
       axisPointer: { type: "shadow" },
@@ -54,11 +62,26 @@ export default function Composition100Stack({ dim, rows }:{ dim: "desig"|"movety
         return `<b>${t}</b><br/>${lines.join("<br/>")}`;
       }
     },
-    legend: { textStyle:{ color:"#cfd7f2" } },
-    xAxis: { type: "value", min: 0, max: 100, axisLabel:{ color:"#b7c3e0", formatter: '{value}%' }, splitLine:{ lineStyle:{ color:"#1f2a44" } } },
-    yAxis: { type: "category", data: terminals, axisLabel:{ color:"#b7c3e0" } },
+    legend: { textStyle:{ color: colors.legendText } },
+    xAxis: { type: "value", min: 0, max: 100, axisLabel:{ color: colors.axisText, formatter: '{value}%' }, splitLine:{ lineStyle:{ color: colors.gridLines } } },
+    yAxis: { type: "category", data: terminals, axisLabel:{ color: colors.axisText } },
     series
   };
 
-  return <div className="card"><h3>{title}</h3><ReactECharts option={option} style={{ height: 420 }} /></div>;
+  return (
+    <div className="h-full flex flex-col">
+      <h3 className="card-header">{title}</h3>
+      <div className="card-body flex-1">
+        <ReactECharts 
+          option={option} 
+          style={{ 
+            width: '100%',
+            height: '100%',
+            minHeight: '300px'
+          }}
+          opts={{ renderer: 'canvas' }}
+        />
+      </div>
+    </div>
+  );
 }

@@ -108,3 +108,26 @@ export async function getCompositionByTerminal(start: string, end: string, dim: 
   const r = await api.get("/analytics/composition_by_terminal", { params });
   return r.data as { dim: "desig"|"movetype"; rows: {terminal:string; key:string; pred:number}[] };
 }
+
+export async function getHourlyTotals(start: string, end: string, terminal: string) {
+  const params: any = { start_iso: start, end_iso: end };
+  if (terminal && terminal !== "ALL") params.terminal_id = terminal;
+  const r = await api.get("/analytics/hourly_totals", { params });
+  return r.data as { points: { date: string; hour: number; pred: number }[] };
+}
+
+export async function getTotalForecastVolume(start: string, end: string, terminal: string, moveType?: string, desig?: string) {
+  const params: any = { start_iso: start, end_iso: end };
+  if (terminal && terminal !== "ALL") params.terminal_id = terminal;
+  if (moveType && moveType !== "ALL") params.move_type = moveType;
+  if (desig && desig !== "ALL") params.desig = desig;
+  const r = await api.get("/analytics/total_forecast_volume", { params });
+  return r.data as {
+    total_volume: number;
+    total_in: number;
+    total_out: number;
+    net_flow: number;
+    window_hours: number;
+    breakdown: { hour: number; total: number; in: number; out: number }[];
+  };
+}

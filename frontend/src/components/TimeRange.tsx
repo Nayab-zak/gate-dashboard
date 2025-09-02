@@ -1,7 +1,7 @@
 // src/components/TimeRange.tsx
 "use client";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+// import "react-datepicker/dist/react-datepicker.css"; // Commented out to fix compilation issue
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
@@ -30,14 +30,16 @@ export default function TimeRange(){
   return (
     <div className="flex flex-wrap items-end gap-4">
       <div className="space-y-1">
-        <label className="block text-xs opacity-80">Mode</label>
+        <label className="block text-sm theme-text font-bold">Mode</label>
         <div className="flex flex-wrap gap-2">
           {modes.map(m => (
             <button
               key={m.key}
               onClick={()=> set({ mode: m.key })}
-              className={`px-3 py-1.5 rounded-md text-sm
-                          ${mode===m.key ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200 hover:bg-slate-700"}`}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+                          ${mode===m.key 
+                            ? "bg-theme-accent text-white" 
+                            : "bg-theme-card text-theme-card-text border border-theme-border hover:bg-theme-bg-secondary hover:text-theme-text"}`}
             >
               {m.label}
             </button>
@@ -48,26 +50,26 @@ export default function TimeRange(){
       {mode === "custom" && (
         <>
           <div className="space-y-1">
-            <label className="block text-xs opacity-80">Start</label>
+            <label className="block text-sm theme-text font-bold">Start</label>
             <DatePicker
               selected={start}
               onChange={(d: Date | null) => set({ start: toLocalStr(d) })}
               showTimeSelect
               timeIntervals={60}
               dateFormat="yyyy-MM-dd HH:mm"
-              className="bg-slate-900 border border-slate-700 rounded px-2 py-2"
+              className="bg-theme-card border border-theme-border rounded px-3 py-2 theme-text placeholder-theme-text-secondary focus:border-theme-accent focus:outline-none"
               placeholderText="Select start time"
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-xs opacity-80">End</label>
+            <label className="block text-sm theme-text font-bold">End</label>
             <DatePicker
               selected={end}
               onChange={(d: Date | null) => set({ end: toLocalStr(d) })}
               showTimeSelect
               timeIntervals={60}
               dateFormat="yyyy-MM-dd HH:mm"
-              className="bg-slate-900 border border-slate-700 rounded px-2 py-2"
+              className="bg-theme-card border border-theme-border rounded px-3 py-2 theme-text placeholder-theme-text-secondary focus:border-theme-accent focus:outline-none"
               placeholderText="Select end time"
               minDate={start ?? undefined}
             />

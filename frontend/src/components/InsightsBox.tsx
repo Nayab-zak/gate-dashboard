@@ -34,11 +34,11 @@ export default function InsightsBox({ forecast, share, ranking }: Inputs) {
 }
 
 function Insight({label, value, tone="slate"}:{label:string; value:React.ReactNode; tone?:"slate"|"amber"|"red"|"green"}) {
-  const bg = tone==="red"?"bg-red-600/15":tone==="amber"?"bg-amber-500/15":tone==="green"?"bg-emerald-600/15":"bg-slate-700/30";
+  const bg = tone==="red"?"bg-dp-red/15":tone==="amber"?"bg-red-500/15":tone==="green"?"bg-dp-green/15":"bg-dp-card-dark/30";
   return (
-    <div className={`rounded-lg p-3 ${bg}`}>
-      <div className="text-xs opacity-80">{label}</div>
-      <div className="text-base font-semibold">{value}</div>
+    <div className={`rounded-lg p-3 border border-white/10 ${bg}`}>
+      <div className="text-xs opacity-80 theme-card-text-secondary">{label}</div>
+      <div className="text-base font-semibold theme-card-text">{value}</div>
     </div>
   );
 }

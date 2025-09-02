@@ -8,8 +8,7 @@ export default function UtilizationGauges({ items }:{
 }) {
   // show up to 8 per row
   const option = {
-    title: { text: "Terminal Capacity Utilization (peak forecast)", left: "center", textStyle:{color:"#cfd7f2", fontSize:12}},
-    grid: { top: 36 },
+    grid: { top: 20 },
     series: items.map((it, idx) => ({
       type: "gauge",
       center: [`${(idx%4)*25 + 12.5}%`, `${Math.floor(idx/4)*50 + 50}%`], // 4 per row

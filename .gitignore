@@ -2,6 +2,12 @@
 node_modules/
 .next/
 
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.tsbuildinfo
+
 # Logs
 logs
 *.log

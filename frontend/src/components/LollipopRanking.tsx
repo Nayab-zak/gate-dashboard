@@ -9,8 +9,7 @@ export default function LollipopRanking({ data }:{ data: {terminal:string; total
   const x = sorted.map(d=>Math.round(d.total_pred));
 
   const option = {
-    title: { text: "Terminal Ranking (predicted total)", textStyle:{color:"#cfd7f2", fontSize:12} },
-    grid: { left: 90, right: 20, top: 36, bottom: 24 },
+    grid: { left: 90, right: 20, top: 20, bottom: 24 },
     xAxis: { type: "value", min:0, axisLabel:{color:"#b7c3e0"}, splitLine:{lineStyle:{color:"#1f2a44"}} },
     yAxis: { type: "category", data: y, axisLabel:{color:"#b7c3e0"} },
     series: [

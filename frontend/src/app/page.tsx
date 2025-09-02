@@ -1,6 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { fetchNext8h, fetchRange, getTerminalRanking, getMoveTypeShare, getMoveTypeHourly, getDesigHourly, getTerminalHourHeatmap, getSunburst } from "@/lib/api";
+import { fetchNext8h, fetchRange, getTerminalRanking, getMoveTypeShare, getMoveTypeHourly, getDesigHourly, getTerminalHourHeatmap, getSunburst, getHourlyTotals, getCompositionByTerminal, getTotalForecastVolume } from "@/lib/api";
 import KpiStrip from "@/components/KpiStrip";
 import FanChart from "@/components/FanChart";
 import FilterRail from "@/components/FilterRail";
@@ -19,8 +19,11 @@ import CompositionSunburst from "@/components/CompositionSunburst";
 import InsightsBox from "@/components/InsightsBox";
 import UtilizationGauges from "@/components/UtilizationGauges";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import Composition100Stack from "@/components/Composition100Stack";
-import { getCompositionByTerminal } from "@/lib/api";
+import Header from "@/components/Header";
+import GateLoadStatus from "@/components/GateLoadStatus";
+import ExportButton from "@/components/ExportButton";
 
 
 function computeWindow(mode: string, start: string, end: string) {
@@ -54,7 +57,10 @@ export default function Page(){
   const mode = modeRaw === "range" ? "custom" : modeRaw; // Accept old URLs
   const start = sp.get("start") || "";
   const end   = sp.get("end")   || "";
-  const rankingDim = sp.get("rankingdim") || "total"; // New dimension switcher: "total" or "average"
+  // Use local state for ranking dimension instead of URL parameter to prevent full page reload
+  const [rankingDim, setRankingDim] = useState<"total" | "average">(
+    (sp.get("rankingdim") || "total") as "total" | "average"
+  );
   const dim = (sp.get("compdim") || "desig").toLowerCase() as "desig"|"movetype";
 
   const { data, isLoading, error } = useQuery({
@@ -143,6 +149,18 @@ export default function Page(){
     refetchInterval: mode === "next8h" || mode === "today" ? 60_000 : false,
   });
 
+  const qHourlyTotals = useQuery({
+    queryKey: ["hourly_totals", startStr, endStr, terminal],
+    queryFn: () => getHourlyTotals(startStr, endStr, terminal),
+    refetchInterval: mode === "next8h" || mode === "today" ? 60_000 : false,
+  });
+
+  const qTotalVolume = useQuery({
+    queryKey: ["total_forecast_volume", startStr, endStr, terminal, moveType, desig],
+    queryFn: () => getTotalForecastVolume(startStr, endStr, terminal, moveType, desig),
+    refetchInterval: mode === "next8h" || mode === "today" ? 60_000 : false,
+  });
+
   // Calculate the number of hours in the selected time window
   const windowHours = (() => {
     try {
@@ -177,94 +195,197 @@ export default function Page(){
     utilizationPct: Math.min(150, Math.round((maxPred / capacity) * 100))
   }));
 
-  // Hour wheel: collapse to hour totals (sum across terminals/types for window)
-  const hourWheel = (qMTTrend.data?.points || []).reduce((m:any, p:any) => {
-    m[p.hour] = (m[p.hour]||0) + p.pred; 
-    return m;
-  }, {});
-  const hourList = Object.keys(hourWheel).map(h => ({ hour: Number(h), pred: hourWheel[h] })).sort((a,b)=>a.hour-b.hour);
+  // Hour wheel: use aggregated hourly totals (no manual aggregation needed)
+  const hourList = (qHourlyTotals.data?.points || []).map(p => ({ 
+    hour: p.hour, 
+    pred: p.pred 
+  })).sort((a,b)=>a.hour-b.hour);
   
-  // Debug: Check what's happening with the MoveType hourly data
-  console.log("qMTTrend loading:", qMTTrend.isLoading);
-  console.log("qMTTrend error:", qMTTrend.error);
-  console.log("qMTTrend data:", qMTTrend.data);
+  // Debug: Check what's happening with the Hourly Totals data
+  console.log("qHourlyTotals loading:", qHourlyTotals.isLoading);
+  console.log("qHourlyTotals error:", qHourlyTotals.error);
+  console.log("qHourlyTotals data:", qHourlyTotals.data);
   console.log("hourList length:", hourList.length);
 
   return (
-    <div className="grid grid-cols-[280px_1fr] gap-6 px-6 py-6">
-      <FilterRail />
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <TimeRange />
+    <>
+      <Header />
+      <div className="min-h-screen theme-bg-secondary">
+        {/* Fixed Sidebar - Control Panel */}
+        <div className="fixed left-0 top-0 w-80 h-full pt-20 z-40" style={{ background: 'var(--theme-header-gradient, linear-gradient(135deg, #3C2E8F 0%, #2B2C7A 50%, #002F6C 100%))' }}>
+          <div className="p-6">
+            <FilterRail />
+          </div>
         </div>
 
-        {isLoading && <div>Loading...</div>}
-        {error && <div>Error loading data</div>}
-
-        {data && (
-          <>
-            <KpiStrip data={data} capacity={capacity} />
-
-            <InsightsBox forecast={data} share={qShare.data?.share} ranking={qRanking.data?.ranking} />
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <FanChart rows={data.horizon_hours} title={mode==="custom" ? "Demand Forecast - Selected Period" : "Demand Forecast - Next 8 Hours"} capacity={capacity} />
-              {qDesig.data && <DesigStackedArea points={qDesig.data.points} />}
+        {/* Main Content Area */}
+        <div className="ml-80">
+          {/* Time Controls Bar */}
+          <div className="theme-bg-secondary theme-border border-b px-6 py-4">
+            <div className="flex items-center justify-between">
+              <TimeRange />
+              <ExportButton />
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {transformedRanking && (
-                <div className="space-y-4">
-                  {/* Dimension Switcher */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-600">View Mode:</span>
-                    <div className="flex bg-gray-100 rounded-md p-1">
-                      <a 
-                        href={`?${new URLSearchParams({...Object.fromEntries(sp.entries()), rankingdim: 'total'}).toString()}`}
-                        className={`px-3 py-1 rounded transition-colors ${
-                          rankingDim === 'total' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Total Period ({windowHours}h)
-                      </a>
-                      <a 
-                        href={`?${new URLSearchParams({...Object.fromEntries(sp.entries()), rankingdim: 'average'}).toString()}`}
-                        className={`px-3 py-1 rounded transition-colors ${
-                          rankingDim === 'average' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Hourly Average
-                      </a>
+          {/* Dashboard Content with consistent grid system - Fixed container */}
+          <div className="px-6 py-6 dashboard-container">
+            {isLoading && <div className="text-center py-12 theme-text-secondary text-lg">Loading dashboard data...</div>}
+            {error && <div className="text-center py-12 text-red-600 text-lg">Error loading data. Please refresh.</div>}
+
+            {data && (
+              <div className="space-y-8">
+                {/* ROW 1: Executive Summary KPIs - Full Width Section */}
+                <section className="dashboard-row">
+                  <div className="flex items-center justify-between mb-6">
+                    <h1 className="text-3xl font-bold theme-text">Executive Summary</h1>
+                    <div className="flex items-center gap-2 text-sm theme-text-secondary">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      Live Data
                     </div>
                   </div>
-                  <BulletRanking 
-                    totals={transformedRanking.ranking} 
-                    capacityPerHour={capacity} 
-                    hours={rankingDim === 'average' ? 1 : windowHours}
-                    subtitle={rankingDim === 'average' ? 'Average containers per hour by terminal' : `Total containers over ${windowHours}h period by terminal`}
-                  />
-                </div>
-              )}
-              <HourWheel hourly={hourList} />
-              {qSun.data && <CompositionSunburst data={qSun.data.sunburst} />}
-            </div>
+                  <div className="w-full">
+                    <KpiStrip data={data} capacity={capacity} flowData={qMTTrend.data?.points || []} totalVolumeData={qTotalVolume.data} />
+                  </div>
+                </section>
 
-            {/* Composition Chart */}
-            {qComp.data && (
-              <div className="grid grid-cols-1 gap-6">
-                <Composition100Stack dim={qComp.data.dim} rows={qComp.data.rows} />
+                {/* ROW 2: Demand & Capacity Trends - 2/3 + 1/3 Layout */}
+                <section className="dashboard-row">
+                  <h2 className="text-3xl font-bold theme-text mb-6">Demand & Capacity Trends</h2>
+                  <div className="grid-12-col adaptive-row">
+                    {/* Primary Forecast Chart - 8/12 columns */}
+                    <div className="grid-col-8 dashboard-card-wrapper">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-large">
+                        <div className="card-content h-full">
+                          <FanChart 
+                            rows={data.horizon_hours} 
+                            title={mode==="custom" ? "Demand Forecast - Selected Period" : "Demand Forecast - Next 8 Hours"} 
+                            capacity={capacity} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Gate Flow Status - 4/12 columns */}
+                    <div className="grid-col-4 dashboard-card-wrapper">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-large">
+                        <div className="card-content h-full">
+                          <GateLoadStatus points={qMTTrend.data?.points || []} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* ROW 3: Operational Performance - 50/50 Layout */}
+                <section className="dashboard-row">
+                  <h2 className="text-3xl font-bold theme-text mb-6">Operational Performance</h2>
+                  <div className="grid-12-col adaptive-row">
+                    {/* Terminal Performance Ranking - 6/12 columns */}
+                    <div className="grid-col-6 dashboard-card-wrapper">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                        <div className="card-content h-full">
+                          {transformedRanking && (
+                            <div className="h-full flex flex-col">
+                              {/* Dimension Switcher */}
+                              <div className="flex items-center gap-2 text-sm mb-4 flex-shrink-0 card-header">
+                                <span className="theme-text-accent font-medium">View Mode:</span>
+                                <div className="flex bg-white/20 rounded-lg p-1">
+                                  <button 
+                                    onClick={() => setRankingDim('total')}
+                                    className={`px-3 py-1 rounded-md transition-colors ${
+                                      rankingDim === 'total' 
+                                        ? 'bg-dp-green text-white font-medium shadow-sm' 
+                                        : 'text-white hover:text-dp-green hover:bg-white/10'
+                                    }`}
+                                  >
+                                    Total Period ({windowHours}h)
+                                  </button>
+                                  <button 
+                                    onClick={() => setRankingDim('average')}
+                                    className={`px-3 py-1 rounded-md transition-colors ${
+                                      rankingDim === 'average' 
+                                        ? 'bg-dp-green text-white font-medium shadow-sm' 
+                                        : 'text-white hover:text-dp-green hover:bg-white/10'
+                                    }`}
+                                  >
+                                    Hourly Average
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex-1 min-h-0 overflow-hidden card-body">
+                                <BulletRanking 
+                                  totals={transformedRanking.ranking} 
+                                  capacityPerHour={capacity} 
+                                  hours={rankingDim === 'average' ? 1 : windowHours}
+                                  subtitle={rankingDim === 'average' ? 'Average containers per hour by terminal' : `Total containers over ${windowHours}h period by terminal`}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Daily Activity Pattern - 6/12 columns */}
+                    <div className="grid-col-6 dashboard-card-wrapper">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                        <div className="card-content h-full">
+                          <HourWheel hourly={hourList} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* ROW 4: Deep Dive Analysis - Side by Side Charts */}
+                <section className="dashboard-row">
+                  <h2 className="text-3xl font-bold theme-text mb-6">Deep Dive Analysis</h2>
+                  <div className="grid-12-col gap-6">
+                    {/* Gate Load Distribution by Terminal - Half width */}
+                    <div className="grid-col-6 dashboard-card-wrapper">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                        <div className="card-content h-full">
+                          {qComp.data && (
+                            <Composition100Stack dim={qComp.data.dim} rows={qComp.data.rows} />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Peak Activity Times Heatmap - Half width */}
+                    <div className="grid-col-6 dashboard-card-wrapper">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                        <div className="card-content h-full">
+                          {qHeat.data && <PrettyHeatmap cells={qHeat.data.cells} />}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Optional: Operations Breakdown - Side by side when available */}
+                  {qSun.data && (
+                    <div className="grid-12-col mt-6">
+                      <div className="grid-col-6 dashboard-card-wrapper">
+                        <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                          <div className="card-content h-full">
+                            <CompositionSunburst data={qSun.data.sunburst} />
+                          </div>
+                        </div>
+                      </div>
+                      {qDesig.data && (
+                        <div className="grid-col-6 dashboard-card-wrapper">
+                          <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                            <div className="card-content h-full">
+                              <DesigStackedArea points={qDesig.data.points} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </section>
               </div>
             )}
-
-            {/* Optional, keep if space allows */}
-            {qHeat.data && <PrettyHeatmap cells={qHeat.data.cells} />}
-          </>
-        )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

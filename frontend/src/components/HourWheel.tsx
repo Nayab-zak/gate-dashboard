@@ -2,8 +2,19 @@
 "use client";
 import React from "react";
 import ReactECharts from "echarts-for-react";
+import { useTheme } from "./ThemeProvider";
 
 export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:number }[] }) {
+  const { theme } = useTheme();
+  
+  // Theme-aware colors
+  const colors = {
+    axisText: theme === 'light' ? '#002F6C' : '#f8fafc',
+    axisLine: theme === 'light' ? '#002F6C' : '#94a3b8',
+    gridLines: theme === 'light' ? '#002F6C' : '#64748b',
+    radiusText: theme === 'light' ? '#002F6C' : '#f1f5f9'
+  };
+  
   // Debug: log the input data
   console.log("HourWheel data:", hourly);
   
@@ -41,30 +52,15 @@ export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:numbe
 
   const option = {
     backgroundColor: 'transparent',
-    title: { 
-      text: "Daily Activity Pattern", 
-      subtext: isEmpty ? "No activity data available" : "Container flow by hour of day",
-      left: "center", 
-      top: 10,
-      textStyle: { 
-        color: "#f1f5f9", 
-        fontSize: 14,
-        fontWeight: 'bold'
-      },
-      subtextStyle: { 
-        color: "#cbd5e1", 
-        fontSize: 10
-      }
-    },
     polar: {
       radius: ['20%', '85%'],
-      center: ['50%', '55%']
+      center: ['50%', '50%']
     },
     angleAxis: { 
       type: "category", 
       data: hours.map(h => `${String(h).padStart(2,"0")}`), 
       axisLabel: { 
-        color: "#f8fafc", 
+        color: colors.axisText, 
         fontSize: 12,
         fontWeight: 'bold',
         rotate: 0
@@ -72,21 +68,21 @@ export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:numbe
       axisLine: { 
         show: true, 
         lineStyle: { 
-          color: "#94a3b8",
+          color: colors.axisLine,
           width: 3
         } 
       },
       axisTick: { 
         show: true, 
         lineStyle: { 
-          color: "#94a3b8",
+          color: colors.axisLine,
           width: 2
         } 
       },
       splitLine: { 
         show: true, 
         lineStyle: { 
-          color: "#64748b",
+          color: colors.gridLines,
           width: 2,
           type: 'solid'
         } 
@@ -97,7 +93,7 @@ export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:numbe
       min: 0,
       max: isEmpty ? 10 : undefined,
       axisLabel: { 
-        color: "#f1f5f9", 
+        color: colors.radiusText, 
         fontSize: 11,
         fontWeight: 'bold',
         show: !isEmpty
@@ -126,10 +122,26 @@ export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:numbe
       borderWidth: 1,
       textStyle: {
         color: '#f9fafb',
-        fontSize: 12
+        fontSize: 12,
+        fontWeight: '500'
       },
+      extraCssText: 'box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); border-radius: 8px; padding: 8px 12px;',
       formatter: (params: any) => {
-        return `<strong>Hour ${params.name}:00</strong><br/>Volume: <span style="color: #60a5fa">${params.value.toLocaleString()}</span>`;
+        const hour = params.name;
+        const value = params.value || 0;
+        const percentage = maxValue > 0 ? ((value / maxValue) * 100).toFixed(1) : '0.0';
+        
+        return `
+          <div style="font-weight: bold; margin-bottom: 4px; color: #f1f5f9;">
+            ${hour}:00 - ${String(Number(hour) + 1).padStart(2, '0')}:00
+          </div>
+          <div style="color: #60a5fa; font-weight: 600;">
+            📊 Volume: ${value.toLocaleString()} containers
+          </div>
+          <div style="color: #34d399; font-size: 11px; margin-top: 2px;">
+            ${percentage}% of peak activity
+          </div>
+        `;
       }
     },
     series: [{
@@ -173,16 +185,26 @@ export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:numbe
   };
   
   return (
-    <div className="card relative">
-      <h3>Daily Activity Pattern</h3>
-      <ReactECharts option={option} style={{height: 360}} />
+    <div className="h-full flex flex-col">
+      <h3 className="card-header">Daily Activity Pattern</h3>
+      <div className="card-body flex-1">
+        <ReactECharts 
+          option={option} 
+          style={{
+            width: '100%',
+            height: '100%',
+            minHeight: '300px'
+          }}
+          opts={{ renderer: 'canvas' }}
+        />
+      </div>
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
-            <div className="text-slate-200 text-sm text-center font-medium">
+          <div className="bg-theme-card/90 backdrop-blur-sm rounded-lg p-4 border border-theme-border">
+            <div className="text-theme-text text-sm text-center font-medium">
               No hourly data available
             </div>
-            <div className="text-slate-400 text-xs mt-1 text-center">
+            <div className="text-theme-text-secondary text-xs mt-1 text-center">
               Check time range and filters
             </div>
           </div>

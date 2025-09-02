@@ -3,8 +3,24 @@
 import React from "react";
 import ReactECharts from "echarts-for-react";
 import { ForecastPoint } from "@/lib/api";
+import { useTheme } from "./ThemeProvider";
 
 export default function FanChart({ rows, title, capacity: capacityValue }:{ rows: ForecastPoint[]; title:string; capacity?: number }) {
+  const { theme } = useTheme();
+  
+  // Theme-aware colors
+  const colors = {
+    text: theme === 'light' ? '#002F6C' : '#FFFFFF',
+    textSecondary: theme === 'light' ? '#3A4757' : '#B3B3B3',
+    gridLines: '#B3B3B3',
+    tooltipBg: theme === 'light' ? '#FFFFFF' : '#0E2F51',
+    tooltipBorder: theme === 'light' ? '#002F6C20' : '#ffffff20',
+    forecastNormal: '#0B4FA7',
+    forecastOverload: '#ED1C24',
+    capacity: '#00A859',
+    emptyState: theme === 'light' ? '#B3B3B3' : '#0E2F51'
+  };
+
   // Check for empty data
   const isEmpty = !rows || rows.length === 0;
   const hasData = !isEmpty && rows.some(r => (r.pred ?? 0) > 0);
@@ -42,27 +58,20 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
 
   const option = {
     backgroundColor: "transparent",
-    title: { 
-      text: title, 
-      subtext: isEmpty ? "No forecast data available" : !hasData ? "All forecast values are zero" : "",
-      textStyle: { 
-        color: "#f1f5f9", 
-        fontSize: 14,
-        fontWeight: 'bold'
-      },
-      subtextStyle: { 
-        color: "#cbd5e1", 
-        fontSize: 10
-      }
+    grid: { 
+      left: 60, 
+      right: 20, 
+      top: 20, 
+      bottom: 40,
+      containLabel: true
     },
-    grid: { left: 48, right: 20, top: 36, bottom: 32 },
     tooltip: isEmpty ? { show: false } : {
       trigger: "axis",
-      backgroundColor: '#1f2937',
-      borderColor: '#374151',
+      backgroundColor: colors.tooltipBg,
+      borderColor: colors.tooltipBorder,
       borderWidth: 1,
       textStyle: {
-        color: '#f9fafb',
+        color: colors.text,
         fontSize: 12
       },
       formatter: (params: any) => {
@@ -71,13 +80,13 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
         
         params.forEach((param: any) => {
           if (param.seriesName === "Predicted" && param.value !== null) {
-            result += `Predicted: <span style="color: #3b82f6">${param.value}</span><br/>`;
+            result += `Predicted: <span style="color: #0B4FA7">${param.value}</span><br/>`;
           }
           if (param.seriesName === "Capacity" && param.value !== null) {
-            result += `Capacity: <span style="color: #f59e0b">${param.value}</span><br/>`;
+            result += `Capacity: <span style="color: #00A859">${param.value}</span><br/>`;
           }
           if (param.seriesName === "Overload" && param.value > 0) {
-            result += `<span style="color: #ef4444">⚠️ Overload: ${param.value}</span><br/>`;
+            result += `<span style="color: #ED1C24">⚠️ Overload: ${param.value}</span><br/>`;
           }
         });
         return result;
@@ -86,9 +95,9 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
     xAxis: { 
       type: "category", 
       data: x, 
-      axisLine: { lineStyle: { color: "#64748b", width: 2 } }, 
+      axisLine: { lineStyle: { color: colors.gridLines, width: 2 } }, 
       axisLabel: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0", 
+        color: isEmpty ? colors.gridLines : colors.text, 
         fontSize: 11, 
         fontWeight: '500' 
       } 
@@ -96,10 +105,10 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
     yAxis: { 
       type: "value", 
       min: 0, 
-      axisLine: { lineStyle: { color: "#64748b", width: 2 } }, 
-      splitLine: { lineStyle: { color: "#475569", width: 1 } }, 
+      axisLine: { lineStyle: { color: colors.gridLines, width: 2 } }, 
+      splitLine: { lineStyle: { color: colors.gridLines, width: 1, opacity: 0.3 } }, 
       axisLabel: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0", 
+        color: isEmpty ? colors.gridLines : colors.text, 
         fontSize: 10, 
         fontWeight: '500' 
       } 
@@ -118,13 +127,13 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
         barWidth: "60%",
         itemStyle: { 
           color: (params: any) => {
-            if (isEmpty) return '#374151';
+            if (isEmpty) return colors.emptyState;
             const value = params.value;
             const cap = capacity[params.dataIndex];
-            return value > cap ? "#dc2626" : "#3b82f6"; // Red for overload, blue for normal
+            return value > cap ? colors.forecastOverload : colors.forecastNormal;
           },
           opacity: isEmpty ? 0.3 : 0.8,
-          borderColor: '#1e293b',
+          borderColor: '#ffffff20',
           borderWidth: 1
         },
         z: 2,
@@ -138,36 +147,46 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
         barWidth: "60%",
         barGap: "-100%", // Overlay on forecast bars
         itemStyle: { 
-          color: "#ef4444",
+          color: colors.forecastOverload,
           opacity: isEmpty ? 0 : 0.9,
-          borderColor: '#dc2626',
+          borderColor: '#B3010F',
           borderWidth: 2,
           shadowBlur: 4,
-          shadowColor: '#ef444440'
+          shadowColor: '#ED1C2440'
         },
         z: 3,
         silent: isEmpty
       },
       // main forecast line
-      { name: "Predicted", type: "line", data: y, symbol: "circle", symbolSize: 6, smooth: true, lineStyle:{width:3, color: isEmpty ? "#64748b" : "#60a5fa"}, itemStyle:{opacity: isEmpty ? 0.3 : 0.9}, z:4,
-        markPoint: isEmpty ? undefined : { data: [{ name: "Peak", xAxis: x[peakIdx], yAxis: y[peakIdx], value: Math.round(y[peakIdx]) }], label:{color:"#fff"} },
+      { name: "Predicted", type: "line", data: y, symbol: "circle", symbolSize: 6, smooth: true, lineStyle:{width:3, color: isEmpty ? colors.gridLines : colors.forecastNormal}, itemStyle:{opacity: isEmpty ? 0.3 : 0.9}, z:4,
+        markPoint: isEmpty ? undefined : { data: [{ name: "Peak", xAxis: x[peakIdx], yAxis: y[peakIdx], value: Math.round(y[peakIdx]) }], label:{color: colors.text} },
         silent: isEmpty
       },
-      { name: "Capacity", type: "line", data: capacity, symbol: "none", lineStyle: { type: "dashed", color: isEmpty ? "#64748b" : "#f59e0b", width: 3 }, z: 1, silent: isEmpty },
+      { name: "Capacity", type: "line", data: capacity, symbol: "none", lineStyle: { type: "dashed", color: isEmpty ? colors.gridLines : colors.capacity, width: 3 }, z: 1, silent: isEmpty },
     ]
   };
 
   return (
-    <div className="card relative">
-      <h3>{title}</h3>
-      <ReactECharts option={option} style={{ height: 460 }} />
+    <div className="h-full flex flex-col">
+      <h3 className="card-header" style={{ color: 'var(--theme-card-text, #002F6C)' }}>{title}</h3>
+      <div className="card-body flex-1">
+        <ReactECharts 
+          option={option} 
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            minHeight: '300px'
+          }} 
+          opts={{ renderer: 'canvas' }}
+        />
+      </div>
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
-            <div className="text-slate-200 text-sm text-center font-medium">
+          <div className="bg-theme-card/90 backdrop-blur-sm rounded-lg p-4 border border-theme-border">
+            <div className="text-sm text-center font-medium" style={{ color: 'var(--theme-card-text, #002F6C)' }}>
               No forecast data available
             </div>
-            <div className="text-slate-400 text-xs mt-1 text-center">
+            <div className="text-xs mt-1 text-center" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>
               Check time range selection
             </div>
           </div>

@@ -13,7 +13,6 @@ export default function BreakdownStack({ rows }:{ rows: ForecastPoint[] }) {
   const values = keys.map(k => Math.round(groups.get(k) || 0));
 
   const option = {
-    title: { text: "Breakdown by MoveType × Desig (Predicted sum)" },
     tooltip: { trigger: "axis" },
     xAxis: { type: "category", data: keys },
     yAxis: { type: "value" },

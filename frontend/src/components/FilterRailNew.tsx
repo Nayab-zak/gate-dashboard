@@ -31,16 +31,16 @@ export default function FilterRail() {
   };
 
   return (
-    <aside className="space-y-6">
-      <h3 className="text-lg font-bold text-white mb-6">CONTROL PANEL</h3>
+    <aside className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-6 h-fit">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">Control Panel</h3>
 
       <div className="space-y-6">
         <Field label="Terminal" value={terminal} onChange={v=>set("terminal", v)} options={terminals} />
         <Field label="Move Type" value={movetype} onChange={v=>set("movetype", v)} options={moveTypes} />
         <Field label="Container Type" value={desig} onChange={v=>set("desig", v)} options={desigs} />
         
-        <div className="pt-4 border-t border-white/20">
-          <h4 className="text-sm font-bold text-white mb-3">CAPACITY MANAGEMENT</h4>
+        <div className="pt-4 border-t border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">Capacity Management</h4>
           <CapacityControl value={capacity} onChange={setCapacity} />
         </div>
       </div>
@@ -51,10 +51,10 @@ export default function FilterRail() {
 function Field({label, value, onChange, options}:{label:string; value:string; onChange:(v:string)=>void; options:string[]}) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-white">{label}</label>
-      <select className="w-full bg-dp-navy/80 border border-white/30 rounded-md px-3 py-2 text-white font-medium focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <select className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-900 font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
               value={value} onChange={e=>onChange(e.target.value)}>
-        {options.map(o => <option key={o} value={o} className="bg-dp-navy text-white">{o}</option>)}
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>
   );
@@ -67,17 +67,17 @@ function CapacityControl({value, onChange}:{value: number; onChange:(v: number)=
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+        <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
           Hourly Capacity Limit
         </label>
-        <div className="text-xl font-bold text-green-400 bg-white/10 rounded-md px-3 py-2 border border-white/20">
+        <div className="text-xl font-bold text-gray-900 bg-green-50 rounded-md px-3 py-2 border border-green-200">
           {value} tokens/hr
         </div>
       </div>
       
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white">Quick Settings</label>
+        <label className="block text-sm font-medium text-gray-700">Quick Settings</label>
         <div className="grid grid-cols-3 gap-1">
           {presets.map(preset => (
             <button
@@ -85,8 +85,8 @@ function CapacityControl({value, onChange}:{value: number; onChange:(v: number)=
               onClick={() => onChange(preset)}
               className={`px-2 py-1 text-sm rounded transition-all font-medium ${
                 value === preset 
-                  ? 'bg-green-500 text-white font-bold shadow-md' 
-                  : 'bg-white/10 hover:bg-green-500/20 border border-white/20 text-white hover:border-green-400/50'
+                  ? 'bg-blue-600 text-white font-bold shadow-md' 
+                  : 'bg-gray-100 hover:bg-blue-50 border border-gray-300 text-gray-700 hover:border-blue-300'
               }`}
             >
               {preset}
@@ -96,7 +96,7 @@ function CapacityControl({value, onChange}:{value: number; onChange:(v: number)=
       </div>
       
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white">Custom Value</label>
+        <label className="block text-sm font-medium text-gray-700">Custom Value</label>
         <input
           type="number"
           min="1"
@@ -105,11 +105,11 @@ function CapacityControl({value, onChange}:{value: number; onChange:(v: number)=
           value={isCustom ? value : ''}
           onChange={e => onChange(Math.max(1, parseInt(e.target.value) || 1))}
           placeholder="Enter capacity"
-          className="w-full bg-dp-navy/80 border border-white/30 rounded-md px-3 py-2 text-sm text-white placeholder-white/50 focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+          className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
         />
       </div>
       
-      <div className="mt-4 text-xs text-dp-silver">
+      <div className="mt-4 text-xs text-gray-500">
         <p>🎯 Capacity represents max containers per hour</p>
         <p className="mt-1">💡 Alerts trigger when demand exceeds this threshold</p>
       </div>

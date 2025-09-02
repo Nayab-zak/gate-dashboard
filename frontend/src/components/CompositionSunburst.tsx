@@ -29,20 +29,6 @@ export default function CompositionSunburst({ data }:{ data: Node[] }) {
   
   const option = {
     backgroundColor: 'transparent',
-    title: { 
-      text: "Operations Breakdown by Terminal", 
-      subtext: isEmpty ? "No operations data available" : !hasData ? "All values are zero" : "",
-      left: "center", 
-      textStyle: { 
-        color: "#f1f5f9", 
-        fontSize: 14,
-        fontWeight: 'bold'
-      },
-      subtextStyle: { 
-        color: "#cbd5e1", 
-        fontSize: 10
-      }
-    },
     series: [{
       type: "sunburst",
       radius: [20, "85%"], // Add inner radius for better center visibility
@@ -94,16 +80,26 @@ export default function CompositionSunburst({ data }:{ data: Node[] }) {
   };
   
   return (
-    <div className="card relative">
-      <h3>Operations Breakdown</h3>
-      <ReactECharts option={option} style={{height: 360}} />
+    <div className="h-full flex flex-col">
+      <h3 className="card-header">Operations Breakdown</h3>
+      <div className="card-body flex-1">
+        <ReactECharts 
+          option={option} 
+          style={{
+            width: '100%',
+            height: '100%',
+            minHeight: '300px'
+          }}
+          opts={{ renderer: 'canvas' }}
+        />
+      </div>
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
-            <div className="text-slate-200 text-sm text-center font-medium">
+          <div className="bg-dp-card-dark/90 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="theme-card-text text-sm text-center font-medium">
               No composition data available
             </div>
-            <div className="text-slate-400 text-xs mt-1 text-center">
+            <div className="theme-card-text-secondary text-xs mt-1 text-center">
               Adjust time range or filters
             </div>
           </div>

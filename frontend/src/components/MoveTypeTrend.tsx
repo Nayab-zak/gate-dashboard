@@ -2,8 +2,21 @@
 "use client";
 import React from "react";
 import ReactECharts from "echarts-for-react";
+import { useTheme } from "./ThemeProvider";
 
 export default function MoveTypeTrend({ points }:{ points:{date:string; hour:number; move_type:string; pred:number}[] }) {
+  const { theme } = useTheme();
+  
+  // Theme-aware colors
+  const colors = {
+    axisText: theme === 'light' ? '#002F6C' : '#e2e8f0',
+    legendText: theme === 'light' ? '#002F6C' : '#e2e8f0',
+    gridLines: theme === 'light' ? '#002F6C30' : '#475569',
+    axisLine: theme === 'light' ? '#002F6C' : '#64748b',
+    tooltipBg: theme === 'light' ? '#FFFFFF' : '#1f2937',
+    tooltipBorder: theme === 'light' ? '#002F6C20' : '#374151',
+    tooltipText: theme === 'light' ? '#002F6C' : '#f9fafb'
+  };
   // Check for empty data
   const isEmpty = !points || points.length === 0;
   const hasData = !isEmpty && points.some(p => p.pred > 0);
@@ -29,27 +42,14 @@ export default function MoveTypeTrend({ points }:{ points:{date:string; hour:num
 
   const option = {
     backgroundColor: 'transparent',
-    title: { 
-      text: "Container Flow Trends - Incoming vs Outgoing", 
-      subtext: isEmpty ? "No container flow data available" : !hasData ? "All values are zero" : "",
-      textStyle: { 
-        color: "#f1f5f9", 
-        fontSize: 14,
-        fontWeight: 'bold'
-      },
-      subtextStyle: { 
-        color: "#cbd5e1", 
-        fontSize: 10
-      }
-    },
-    grid: { left:48, right:20, top:36, bottom:32 },
+    grid: { left:48, right:20, top:20, bottom:32 },
     tooltip: isEmpty ? { show: false } : { 
       trigger: "axis",
-      backgroundColor: '#1f2937',
-      borderColor: '#374151',
+      backgroundColor: colors.tooltipBg,
+      borderColor: colors.tooltipBorder,
       borderWidth: 1,
       textStyle: {
-        color: '#f9fafb',
+        color: colors.tooltipText,
         fontSize: 12
       }
     },
@@ -57,26 +57,26 @@ export default function MoveTypeTrend({ points }:{ points:{date:string; hour:num
       type:"category", 
       data: hours.map(h=>`${String(h).padStart(2,"0")}:00`), 
       axisLabel: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
+        color: colors.axisText,
         fontSize: 11,
         fontWeight: '500'
       },
-      axisLine: { lineStyle: { color: "#64748b", width: 2 } }
+      axisLine: { lineStyle: { color: colors.axisLine, width: 2 } }
     },
     yAxis: { 
       type:"value", 
       min:0, 
       axisLabel: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
+        color: colors.axisText,
         fontSize: 10,
         fontWeight: '500'
       }, 
-      splitLine: { lineStyle: { color: "#475569", width: 1 } },
-      axisLine: { lineStyle: { color: "#64748b", width: 2 } }
+      splitLine: { lineStyle: { color: colors.gridLines, width: 1 } },
+      axisLine: { lineStyle: { color: colors.axisLine, width: 2 } }
     },
     legend: { 
       textStyle: { 
-        color: isEmpty ? "#64748b" : "#e2e8f0",
+        color: colors.legendText,
         fontSize: 11
       }
     },
@@ -105,11 +105,11 @@ export default function MoveTypeTrend({ points }:{ points:{date:string; hour:num
         symbol:"circle", 
         symbolSize:6,
         lineStyle: { 
-          color: isEmpty ? "#64748b" : "#f59e0b",
+          color: isEmpty ? "#64748b" : "#10b981",
           width: 2
         },
         itemStyle: {
-          color: isEmpty ? "#64748b" : "#f59e0b"
+          color: isEmpty ? "#64748b" : "#10b981"
         },
         silent: isEmpty
       },
@@ -122,11 +122,11 @@ export default function MoveTypeTrend({ points }:{ points:{date:string; hour:num
       <ReactECharts option={option} style={{height: 360}} />
       {isEmpty && (
         <div className="absolute inset-0 top-12 flex items-center justify-center pointer-events-none z-10">
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
-            <div className="text-slate-200 text-sm text-center font-medium">
+          <div className="bg-theme-card/90 backdrop-blur-sm rounded-lg p-4 border border-theme-border">
+            <div className="text-theme-text text-sm text-center font-medium">
               No move type trend data
             </div>
-            <div className="text-slate-400 text-xs mt-1 text-center">
+            <div className="text-theme-text-secondary text-xs mt-1 text-center">
               Adjust time range or filters
             </div>
           </div>
