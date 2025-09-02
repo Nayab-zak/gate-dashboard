@@ -68,7 +68,7 @@ export default function DesigStackedArea({ points }:{ points:{date:string; hour:
   
   const option = {
     backgroundColor: 'transparent',
-    grid: { left:48, right:20, top:20, bottom:32 },
+    grid: { left:48, right:20, top:40, bottom:32 }, // Increased top margin for legend
     tooltip: isEmpty ? { show: false } : { 
       trigger:"axis",
       backgroundColor: colors.tooltipBg,
@@ -80,6 +80,9 @@ export default function DesigStackedArea({ points }:{ points:{date:string; hour:
       }
     },
     legend: { 
+      orient: 'horizontal',
+      top: 10,
+      right: 20, // Position legend at top-right
       textStyle: { 
         color: colors.legendText,
         fontSize: 11
@@ -87,7 +90,8 @@ export default function DesigStackedArea({ points }:{ points:{date:string; hour:
     },
     xAxis: { 
       type:"category", 
-      data: hours.map(h=>`${String(h).padStart(2,"0")}:00`), 
+      data: hours.map(h=>`${String(h).padStart(2,"0")}:00`),
+      interval: Math.ceil(hours.length / 7) - 1, // Reduce to 6-8 ticks
       axisLabel: { 
         color: colors.axisText,
         fontSize: 11,
@@ -103,7 +107,7 @@ export default function DesigStackedArea({ points }:{ points:{date:string; hour:
         fontSize: 10,
         fontWeight: '500'
       }, 
-      splitLine: { lineStyle: { color: colors.gridLines, width: 1, opacity: 0.3 } },
+      splitLine: { lineStyle: { color: '#B3B3B3', width: 1, opacity: 0.3 } }, // Lightened gridlines
       axisLine: { lineStyle: { color: colors.gridLines, width: 2 } }
     },
     series

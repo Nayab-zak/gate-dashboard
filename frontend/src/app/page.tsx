@@ -4,7 +4,6 @@ import { fetchNext8h, fetchRange, getTerminalRanking, getMoveTypeShare, getMoveT
 import KpiStrip from "@/components/KpiStrip";
 import FanChart from "@/components/FanChart";
 import FilterRail from "@/components/FilterRail";
-import TimeRange from "@/components/TimeRange";
 import TodayTimeline from "@/components/TodayTimeline";
 import BreakdownStack from "@/components/BreakdownStack";
 import LollipopRanking from "@/components/LollipopRanking";
@@ -23,7 +22,7 @@ import { useState } from "react";
 import Composition100Stack from "@/components/Composition100Stack";
 import Header from "@/components/Header";
 import GateLoadStatus from "@/components/GateLoadStatus";
-import ExportButton from "@/components/ExportButton";
+import ExportReportButton from "@/components/ExportReportButton";
 
 
 function computeWindow(mode: string, start: string, end: string) {
@@ -207,24 +206,79 @@ export default function Page(){
   console.log("qHourlyTotals data:", qHourlyTotals.data);
   console.log("hourList length:", hourList.length);
 
+  // Prepare data for export report
+  const getDisplayText = (mode: string, start: string, end: string) => {
+    if (mode === "next8h") return "Next 8 Hours";
+    if (mode === "today") return "Today (00:00-23:00)";
+    if (mode === "custom" && start && end) {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60));
+      return `${startDate.toLocaleDateString()} ${String(startDate.getHours()).padStart(2, '0')}:00 → ${endDate.toLocaleDateString()} ${String(endDate.getHours()).padStart(2, '0')}:00 (${duration}h)`;
+    }
+    return "Time Range";
+  };
+
+  // Extract KPIs from current data for export
+  const exportKpis = data ? [
+    { 
+      label: "Total Forecast Volume", 
+      value: qTotalVolume.data ? `${qTotalVolume.data.total_volume.toLocaleString()} containers` : `${data.horizon_hours.reduce((sum, h) => sum + (h.pred || 0), 0).toLocaleString()} containers`
+    },
+    { 
+      label: "Peak Hour Volume", 
+      value: `${Math.max(...data.horizon_hours.map(h => h.pred || 0)).toLocaleString()} containers/hr`
+    },
+    { 
+      label: "Flow Balance", 
+      value: qTotalVolume.data ? `${Math.round((qTotalVolume.data.total_in / qTotalVolume.data.total_volume) * 100)}% In / ${Math.round((qTotalVolume.data.total_out / qTotalVolume.data.total_volume) * 100)}% Out` : "In/Out Balance"
+    },
+    { 
+      label: "Capacity Alerts", 
+      value: `${data.horizon_hours.filter(h => (h.pred || 0) > capacity).length}/${data.horizon_hours.length} hours`
+    },
+    { 
+      label: "Risk Level", 
+      value: data.horizon_hours.some(h => (h.pred || 0) > capacity) ? "Over capacity" : "Within capacity"
+    },
+  ] : [];
+
+  // Chart targets for export (matching the IDs in the dashboard)
+  const exportTargets = [
+    { title: "Demand Forecast – Selected Period", selector: "#demandChart" },
+    { title: "Gate Flow Status", selector: "#gateFlowChart" },
+    { title: "Terminal Performance Ranking", selector: "#rankingChart" },
+    { title: "Daily Activity Pattern", selector: "#hourWheelChart" },
+    { title: "Gate Load Distribution", selector: "#distributionChart" },
+    { title: "Peak Activity Times Heatmap", selector: "#heatmapChart" },
+  ];
+
   return (
     <>
       <Header />
       <div className="min-h-screen theme-bg-secondary">
         {/* Fixed Sidebar - Control Panel */}
-        <div className="fixed left-0 top-0 w-80 h-full pt-20 z-40" style={{ background: 'var(--theme-header-gradient, linear-gradient(135deg, #3C2E8F 0%, #2B2C7A 50%, #002F6C 100%))' }}>
-          <div className="p-6">
-            <FilterRail />
-          </div>
+        <div className="fixed left-0 top-0 w-[260px] h-full pt-20 z-40" style={{ background: 'var(--theme-header-gradient, linear-gradient(135deg, #3C2E8F 0%, #2B2C7A 50%, #002F6C 100%))' }}>
+          <FilterRail />
         </div>
 
         {/* Main Content Area */}
-        <div className="ml-80">
-          {/* Time Controls Bar */}
+        <div className="ml-[260px]">
+          {/* Controls Bar */}
           <div className="theme-bg-secondary theme-border border-b px-6 py-4">
-            <div className="flex items-center justify-between">
-              <TimeRange />
-              <ExportButton />
+            <div className="flex items-center justify-end">
+              <ExportReportButton
+                reportTitle="DP World – Capacity & Gate Flow Insights"
+                reportSub="Forecasting peak demand, alerts, and flow patterns for smarter terminal operations."
+                filters={{
+                  terminal: terminal,
+                  dateRange: getDisplayText(mode, start, end),
+                  mode: mode === "next8h" ? "Latest" : mode === "today" ? "Today" : "Custom",
+                  capacity: `${capacity} tokens/hr`,
+                }}
+                kpis={exportKpis}
+                targets={exportTargets}
+              />
             </div>
           </div>
 
@@ -255,7 +309,7 @@ export default function Page(){
                   <div className="grid-12-col adaptive-row">
                     {/* Primary Forecast Chart - 8/12 columns */}
                     <div className="grid-col-8 dashboard-card-wrapper">
-                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-large">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-large" id="demandChart">
                         <div className="card-content h-full">
                           <FanChart 
                             rows={data.horizon_hours} 
@@ -267,7 +321,7 @@ export default function Page(){
                     </div>
                     {/* Gate Flow Status - 4/12 columns */}
                     <div className="grid-col-4 dashboard-card-wrapper">
-                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-large">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-large" id="gateFlowChart">
                         <div className="card-content h-full">
                           <GateLoadStatus points={qMTTrend.data?.points || []} />
                         </div>
@@ -282,7 +336,7 @@ export default function Page(){
                   <div className="grid-12-col adaptive-row">
                     {/* Terminal Performance Ranking - 6/12 columns */}
                     <div className="grid-col-6 dashboard-card-wrapper">
-                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium" id="rankingChart">
                         <div className="card-content h-full">
                           {transformedRanking && (
                             <div className="h-full flex flex-col">
@@ -327,7 +381,7 @@ export default function Page(){
                     </div>
                     {/* Daily Activity Pattern - 6/12 columns */}
                     <div className="grid-col-6 dashboard-card-wrapper">
-                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium" id="hourWheelChart">
                         <div className="card-content h-full">
                           <HourWheel hourly={hourList} />
                         </div>
@@ -342,7 +396,7 @@ export default function Page(){
                   <div className="grid-12-col gap-6">
                     {/* Gate Load Distribution by Terminal - Half width */}
                     <div className="grid-col-6 dashboard-card-wrapper">
-                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium" id="distributionChart">
                         <div className="card-content h-full">
                           {qComp.data && (
                             <Composition100Stack dim={qComp.data.dim} rows={qComp.data.rows} />
@@ -352,7 +406,7 @@ export default function Page(){
                     </div>
                     {/* Peak Activity Times Heatmap - Half width */}
                     <div className="grid-col-6 dashboard-card-wrapper">
-                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium">
+                      <div className="theme-card rounded-2xl p-6 shadow-lg w-full adaptive-card adaptive-card-medium" id="heatmapChart">
                         <div className="card-content h-full">
                           {qHeat.data && <PrettyHeatmap cells={qHeat.data.cells} />}
                         </div>

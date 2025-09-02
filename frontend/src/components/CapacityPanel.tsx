@@ -38,7 +38,7 @@ export default function CapacityPanel({ rows, capacity }:{rows: ForecastPoint[];
 
   const option = {
     backgroundColor: 'transparent',
-    grid: { left: 48, right: 20, top: 20, bottom: 32 },
+    grid: { left: 48, right: 80, top: 20, bottom: 32 }, // Increased right margin for capacity label
     tooltip: isEmpty ? { show: false } : { 
       trigger: "axis",
       backgroundColor: colors.tooltipBg,
@@ -52,6 +52,7 @@ export default function CapacityPanel({ rows, capacity }:{rows: ForecastPoint[];
     xAxis: { 
       type: "category", 
       data: x,
+      interval: Math.ceil(x.length / 7) - 1, // Reduce to 6-8 ticks
       axisLabel: { 
         color: colors.axisText,
         fontSize: 11,
@@ -68,7 +69,7 @@ export default function CapacityPanel({ rows, capacity }:{rows: ForecastPoint[];
         fontWeight: '500'
       },
       axisLine: { lineStyle: { color: colors.gridLines, width: 2 } },
-      splitLine: { lineStyle: { color: colors.gridLines, width: 1, opacity: 0.3 } }
+      splitLine: { lineStyle: { color: '#B3B3B3', width: 1, opacity: 0.3 } } // Lightened gridlines
     },
     series: [
       { 
@@ -93,6 +94,28 @@ export default function CapacityPanel({ rows, capacity }:{rows: ForecastPoint[];
           color: isEmpty ? "#B3B3B3" : "#00A859", 
           width: 2,
           type: "dashed"
+        },
+        markLine: {
+          symbol: 'none',
+          label: {
+            show: true,
+            position: 'end',
+            formatter: 'Capacity',
+            color: '#00A859',
+            fontSize: 12,
+            fontWeight: 'bold',
+            backgroundColor: 'transparent',
+            padding: [4, 8]
+          },
+          lineStyle: {
+            type: 'dashed',
+            color: '#00A859',
+            width: 2
+          },
+          data: [{
+            yAxis: capacity,
+            x: '95%' // Position label at far right
+          }]
         },
         silent: isEmpty
       }

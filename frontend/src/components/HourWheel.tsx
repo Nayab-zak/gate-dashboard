@@ -58,7 +58,8 @@ export default function HourWheel({ hourly }:{ hourly: { hour:number; pred:numbe
     },
     angleAxis: { 
       type: "category", 
-      data: hours.map(h => `${String(h).padStart(2,"0")}`), 
+      data: hours.map(h => `${String(h).padStart(2,"0")}`),
+      interval: Math.ceil(hours.length / 8) - 1, // Reduce to 6-8 ticks for better readability
       axisLabel: { 
         color: colors.axisText, 
         fontSize: 12,

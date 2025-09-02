@@ -52,7 +52,7 @@ export default function Composition100Stack({ dim, rows }:{ dim: "desig"|"movety
                                 : "Container Flow Distribution by Terminal (% of total volume)";
 
   const option = {
-    grid: { left: 120, right: 20, top: 20, bottom: 32 },
+    grid: { left: 120, right: 20, top: 40, bottom: 32 }, // Increased top margin for legend
     tooltip: {
       trigger: "axis",
       axisPointer: { type: "shadow" },
@@ -62,8 +62,13 @@ export default function Composition100Stack({ dim, rows }:{ dim: "desig"|"movety
         return `<b>${t}</b><br/>${lines.join("<br/>")}`;
       }
     },
-    legend: { textStyle:{ color: colors.legendText } },
-    xAxis: { type: "value", min: 0, max: 100, axisLabel:{ color: colors.axisText, formatter: '{value}%' }, splitLine:{ lineStyle:{ color: colors.gridLines } } },
+    legend: { 
+      orient: 'horizontal',
+      top: 10,
+      right: 20, // Position legend at top-right
+      textStyle:{ color: colors.legendText }
+    },
+    xAxis: { type: "value", min: 0, max: 100, axisLabel:{ color: colors.axisText, formatter: '{value}%' }, splitLine:{ lineStyle:{ color: '#B3B3B3', opacity: 0.3 } } }, // Lightened gridlines
     yAxis: { type: "category", data: terminals, axisLabel:{ color: colors.axisText } },
     series
   };

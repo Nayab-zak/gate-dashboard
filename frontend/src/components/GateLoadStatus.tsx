@@ -63,11 +63,11 @@ export default function GateLoadStatus({ points = [] }: GateLoadStatusProps) {
         <h3 className="text-xl font-bold" style={{ color: 'var(--theme-card-text, #002F6C)' }}>Predicted Gate Flow (In vs Out)</h3>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-dp-royal-blue rounded-full"></div>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#0B4FA7' }}></div>
             <span className="text-sm" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>Inbound</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-dp-green rounded-full"></div>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00A859' }}></div>
             <span className="text-sm" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>Outbound</span>
           </div>
         </div>
@@ -79,13 +79,19 @@ export default function GateLoadStatus({ points = [] }: GateLoadStatusProps) {
             <div className="text-sm w-12 font-mono" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>{item.time}</div>
             <div className="flex-1 flex bg-white/10 rounded-full h-3 overflow-hidden">
               <div 
-                className="bg-dp-royal-blue transition-all duration-300"
-                style={{ width: `${item.inbound}%` }}
+                className="transition-all duration-300"
+                style={{ 
+                  width: `${item.inbound}%`,
+                  backgroundColor: '#0B4FA7' // Consistent blue
+                }}
                 title={`Inbound: ${item.inbound}%`}
               ></div>
               <div 
-                className="bg-dp-green transition-all duration-300"
-                style={{ width: `${item.outbound}%` }}
+                className="transition-all duration-300"
+                style={{ 
+                  width: `${item.outbound}%`,
+                  backgroundColor: '#00A859' // Consistent green
+                }}
                 title={`Outbound: ${item.outbound}%`}
               ></div>
             </div>

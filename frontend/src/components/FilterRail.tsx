@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchEnums } from "@/lib/api";
+import TimeRange from "./TimeRange";
 
 export default function FilterRail() {
   const { data } = useQuery({ queryKey: ["enums"], queryFn: fetchEnums, staleTime: 5*60_000 });
@@ -31,16 +32,32 @@ export default function FilterRail() {
   };
 
   return (
-    <aside className="space-y-6">
-      <h3 className="text-lg font-bold text-white mb-6">CONTROL PANEL</h3>
-
-      <div className="space-y-6">
-        <Field label="Terminal" value={terminal} onChange={v=>set("terminal", v)} options={terminals} />
-        <Field label="Move Type" value={movetype} onChange={v=>set("movetype", v)} options={moveTypes} />
-        <Field label="Container Type" value={desig} onChange={v=>set("desig", v)} options={desigs} />
+    <aside className="w-[260px] py-6 space-y-6">
+      {/* Time Range Section */}
+      <div className="space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>TIME RANGE</h3>
         
-        <div className="pt-4 border-t border-white/20">
-          <h4 className="text-sm font-bold text-white mb-3">CAPACITY MANAGEMENT</h4>
+        <div className="px-3"> {/* 12px column grid alignment */}
+          <TimeRange />
+        </div>
+      </div>
+      
+      {/* Filters Section */}
+      <div className="pt-4 border-t border-white/20 space-y-6">
+        <h3 className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>FILTERS</h3>
+        
+        <div className="space-y-5 px-3"> {/* 12px column grid alignment */}
+          <Field label="Terminal" value={terminal} onChange={v=>set("terminal", v)} options={terminals} />
+          <Field label="Move Type" value={movetype} onChange={v=>set("movetype", v)} options={moveTypes} />
+          <Field label="Container Type" value={desig} onChange={v=>set("desig", v)} options={desigs} />
+        </div>
+      </div>
+      
+      {/* Capacity Management Section */}
+      <div className="pt-4 border-t border-white/20 space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>CAPACITY MANAGEMENT</h3>
+        
+        <div className="px-3"> {/* 12px column grid alignment */}
           <CapacityControl value={capacity} onChange={setCapacity} />
         </div>
       </div>
@@ -51,8 +68,8 @@ export default function FilterRail() {
 function Field({label, value, onChange, options}:{label:string; value:string; onChange:(v:string)=>void; options:string[]}) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-white">{label}</label>
-      <select className="w-full bg-dp-navy/80 border border-white/30 rounded-md px-3 py-2 text-white font-medium focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+      <label className="block text-xs font-medium text-white/90 uppercase tracking-wide">{label}</label>
+      <select className="w-full bg-dp-navy/80 border border-white/30 rounded-md px-3 py-2.5 text-sm text-white font-medium focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
               value={value} onChange={e=>onChange(e.target.value)}>
         {options.map(o => <option key={o} value={o} className="bg-dp-navy text-white">{o}</option>)}
       </select>
@@ -67,23 +84,23 @@ function CapacityControl({value, onChange}:{value: number; onChange:(v: number)=
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white flex items-center gap-2">
+        <label className="block text-xs font-medium text-white/90 uppercase tracking-wide flex items-center gap-2">
           <span className="w-2 h-2 bg-green-400 rounded-full"></span>
           Hourly Capacity Limit
         </label>
-        <div className="text-xl font-bold text-green-400 bg-white/10 rounded-md px-3 py-2 border border-white/20">
+        <div className="text-lg font-bold text-green-400 bg-white/10 rounded-md px-3 py-2.5 border border-white/20">
           {value} tokens/hr
         </div>
       </div>
       
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white">Quick Settings</label>
+        <label className="block text-xs font-medium text-white/90 uppercase tracking-wide">Quick Settings</label>
         <div className="grid grid-cols-3 gap-1">
           {presets.map(preset => (
             <button
               key={preset}
               onClick={() => onChange(preset)}
-              className={`px-2 py-1 text-sm rounded transition-all font-medium ${
+              className={`px-2 py-1.5 text-xs rounded transition-all font-medium ${
                 value === preset 
                   ? 'bg-green-500 text-white font-bold shadow-md' 
                   : 'bg-white/10 hover:bg-green-500/20 border border-white/20 text-white hover:border-green-400/50'
@@ -96,7 +113,7 @@ function CapacityControl({value, onChange}:{value: number; onChange:(v: number)=
       </div>
       
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white">Custom Value</label>
+        <label className="block text-xs font-medium text-white/90 uppercase tracking-wide">Custom Value</label>
         <input
           type="number"
           min="1"
@@ -105,13 +122,19 @@ function CapacityControl({value, onChange}:{value: number; onChange:(v: number)=
           value={isCustom ? value : ''}
           onChange={e => onChange(Math.max(1, parseInt(e.target.value) || 1))}
           placeholder="Enter capacity"
-          className="w-full bg-dp-navy/80 border border-white/30 rounded-md px-3 py-2 text-sm text-white placeholder-white/50 focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+          className="w-full bg-dp-navy/80 border border-white/30 rounded-md px-3 py-2.5 text-xs text-white placeholder-white/50 focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
         />
       </div>
       
-      <div className="mt-4 text-xs text-dp-silver">
-        <p>🎯 Capacity represents max containers per hour</p>
-        <p className="mt-1">💡 Alerts trigger when demand exceeds this threshold</p>
+      <div className="mt-4 text-xs text-dp-silver space-y-1">
+        <p className="flex items-center gap-1.5">
+          <span>🎯</span>
+          <span>Capacity represents max containers per hour</span>
+        </p>
+        <p className="flex items-center gap-1.5">
+          <span>💡</span>
+          <span>Alerts trigger when demand exceeds this threshold</span>
+        </p>
       </div>
     </div>
   );

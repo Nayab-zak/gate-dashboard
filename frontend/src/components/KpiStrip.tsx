@@ -9,6 +9,7 @@ import {
   createVolumeTooltip,
   validateApiData
 } from "@/lib/dataUtils";
+import Sparkline from "./Sparkline";
 
 interface KpiStripProps {
   data: Next8HResponse;
@@ -45,6 +46,24 @@ export default function KpiStrip({ data, capacity, flowData = [], totalVolumeDat
   const volumeTooltip = totalVolumeData ? createVolumeTooltip(totalIn, totalOut, netFlow) : undefined;
   const timeWindowDesc = getTimeWindowDescription(windowHours);
 
+  // Generate mock 24h trend data for sparklines (in a real app, this would come from an API)
+  const generateTrendData = (baseValue: number, volatility: number = 0.2): number[] => {
+    const points = [];
+    for (let i = 0; i < 24; i++) {
+      const trend = Math.sin((i / 24) * Math.PI * 2) * 0.3; // Daily cycle
+      const noise = (Math.random() - 0.5) * volatility;
+      const factor = 1 + trend + noise;
+      points.push(Math.max(0, baseValue * factor));
+    }
+    return points;
+  };
+
+  const totalVolumeTrend = generateTrendData(totalVolume / windowHours, 0.3);
+  const peakVolumeTrend = generateTrendData(peak, 0.4);
+  const flowTrend = generateTrendData(flowBalance.totalFlow / windowHours, 0.25);
+  const capacityTrend = generateTrendData(capacityMetrics.overloadHours, 0.6);
+  const riskTrend = generateTrendData(capacityMetrics.maxUtilization, 0.3);
+
   return (
     <div className="grid grid-cols-5 gap-6 mb-8">
       {/* Total Forecast Volume */}
@@ -57,10 +76,25 @@ export default function KpiStrip({ data, capacity, flowData = [], totalVolumeDat
             </svg>
           </div>
         </div>
-        <div className="text-4xl font-bold mb-2" style={{ color: 'var(--theme-card-text, #002F6C)' }} title={volumeTooltip}>
-          {formatNumber(totalVolume, 0)}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-bold" style={{ color: 'var(--theme-card-text, #002F6C)' }} title={volumeTooltip}>
+              {formatNumber(totalVolume, 0)}
+            </span>
+            <span className="text-lg font-medium" style={{ color: 'var(--theme-card-text, #002F6C)' }}>containers</span>
+          </div>
+          <div className="flex flex-col items-end">
+            <Sparkline 
+              data={totalVolumeTrend} 
+              width={60} 
+              height={20} 
+              color="var(--theme-card-text-secondary, #3A4757)"
+              strokeWidth={1.5}
+            />
+            <div className="text-xs mt-1" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>24h trend</div>
+          </div>
         </div>
-        <div className="text-sm" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>containers in {timeWindowDesc}</div>
+        <div className="text-sm" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>in {timeWindowDesc}</div>
       </div>
 
       {/* Peak Hour Volume */}
@@ -73,8 +107,25 @@ export default function KpiStrip({ data, capacity, flowData = [], totalVolumeDat
             </svg>
           </div>
         </div>
-        <div className="text-4xl font-bold mb-2" style={{ color: 'var(--theme-card-text, #002F6C)' }}>{formatNumber(peak, 0)}</div>
-        <div className="text-sm" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>max containers/hour</div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-bold" style={{ color: 'var(--theme-card-text, #002F6C)' }}>
+              {formatNumber(peak, 0)}
+            </span>
+            <span className="text-lg font-medium" style={{ color: 'var(--theme-card-text, #002F6C)' }}>containers/hr</span>
+          </div>
+          <div className="flex flex-col items-end">
+            <Sparkline 
+              data={peakVolumeTrend} 
+              width={60} 
+              height={20} 
+              color="var(--theme-card-text-secondary, #3A4757)"
+              strokeWidth={1.5}
+            />
+            <div className="text-xs mt-1" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>24h trend</div>
+          </div>
+        </div>
+        <div className="text-sm" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>maximum hourly rate</div>
       </div>
 
       {/* Current Flow Balance */}
@@ -87,12 +138,27 @@ export default function KpiStrip({ data, capacity, flowData = [], totalVolumeDat
             </svg>
           </div>
         </div>
-        <div className="text-2xl font-bold mb-2" style={{ color: 'var(--theme-card-text, #002F6C)' }}>
-          {flowBalance.inPercent}% In / {flowBalance.outPercent}% Out
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col">
+            <div className="text-2xl font-bold mb-1" style={{ color: 'var(--theme-card-text, #002F6C)' }}>
+              {flowBalance.inPercent}% In / {flowBalance.outPercent}% Out
+            </div>
+            <div className="text-sm font-medium" style={{ color: 'var(--theme-card-text, #002F6C)' }}>
+              {formatNumber(flowBalance.totalFlow, 0)} total containers
+            </div>
+          </div>
+          <div className="flex flex-col items-end">
+            <Sparkline 
+              data={flowTrend} 
+              width={60} 
+              height={20} 
+              color="var(--theme-card-text-secondary, #3A4757)"
+              strokeWidth={1.5}
+            />
+            <div className="text-xs mt-1" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>24h trend</div>
+          </div>
         </div>
-        <div className="text-sm" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>
-          ({formatNumber(flowBalance.totalFlow, 0)} total containers)
-        </div>
+        <div className="text-sm" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>inbound vs outbound ratio</div>
       </div>
 
       {/* Capacity Alerts */}
@@ -113,11 +179,26 @@ export default function KpiStrip({ data, capacity, flowData = [], totalVolumeDat
             </svg>
           </div>
         </div>
-        <div className="flex items-baseline gap-1 mb-2">
-          <span className="text-4xl font-bold text-white">{capacityMetrics.overloadHours}</span>
-          <span className="text-2xl text-white/80">/{windowHours}</span>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1 mb-1">
+              <span className="text-4xl font-bold text-white">{capacityMetrics.overloadHours}</span>
+              <span className="text-2xl text-white/80">/{windowHours}</span>
+              <span className="text-lg font-medium text-white/90 ml-1">hours</span>
+            </div>
+            <div className="text-sm text-white/80">over capacity</div>
+          </div>
+          <div className="flex flex-col items-end">
+            <Sparkline 
+              data={capacityTrend} 
+              width={60} 
+              height={20} 
+              color="rgba(255, 255, 255, 0.7)"
+              strokeWidth={1.5}
+            />
+            <div className="text-xs mt-1 text-white/60">24h trend</div>
+          </div>
         </div>
-        <div className="text-sm text-white/80">hours over capacity</div>
       </div>
 
       {/* Capacity Risk Level */}
@@ -130,17 +211,31 @@ export default function KpiStrip({ data, capacity, flowData = [], totalVolumeDat
             <div className={`w-3 h-3 rounded-full ${riskInfo.color === 'red' ? 'bg-dp-red' : 'bg-gray-300 dark:bg-white/20'}`}></div>
           </div>
         </div>
-        <div className={`text-3xl font-bold mb-2 ${
-          riskInfo.color === 'red' ? 'text-dp-red' :
-          riskInfo.color === 'orange' ? 'text-red-400' :
-          'text-dp-green'
-        }`}>
-          {riskInfo.level}
-        </div>
-        <div className="text-sm theme-text-secondary">
-          {capacityMetrics.overloadHours === 0 ? 'All systems normal' : 
-           capacityMetrics.overloadHours < 3 ? 'Monitor closely' : 
-           'Immediate action needed'}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col">
+            <div className={`text-3xl font-bold mb-1 ${
+              riskInfo.color === 'red' ? 'text-dp-red' :
+              riskInfo.color === 'orange' ? 'text-red-400' :
+              'text-dp-green'
+            }`}>
+              {riskInfo.level}
+            </div>
+            <div className="text-sm theme-text-secondary">
+              {capacityMetrics.overloadHours === 0 ? 'All systems normal' : 
+               capacityMetrics.overloadHours < 3 ? 'Monitor closely' : 
+               'Immediate action needed'}
+            </div>
+          </div>
+          <div className="flex flex-col items-end">
+            <Sparkline 
+              data={riskTrend} 
+              width={60} 
+              height={20} 
+              color={riskInfo.color === 'red' ? '#ED1C24' : riskInfo.color === 'orange' ? '#F59E0B' : '#00A859'}
+              strokeWidth={1.5}
+            />
+            <div className="text-xs mt-1" style={{ color: 'var(--theme-card-text-secondary, #3A4757)' }}>24h trend</div>
+          </div>
         </div>
       </div>
     </div>

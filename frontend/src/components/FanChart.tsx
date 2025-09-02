@@ -56,11 +56,28 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
   const forecastBars = y.map((v, i) => v);
   const overloadBars = y.map((v, i) => v > capacity[i] ? v : 0); // Show 0 instead of null for non-overloads
 
+  // Detect spikes for outlier annotations
+  const avgValue = y.reduce((sum, val) => sum + val, 0) / y.length;
+  const spikeThreshold = avgValue * 2.5; // Consider values 2.5x average as spikes
+  const spikePoints = y.map((value, index) => {
+    if (value > spikeThreshold && value > 0) {
+      return {
+        coord: [index, value], // Use index instead of x[index] for proper alignment
+        value: Math.round(value),
+        itemStyle: { color: '#ED1C24' }
+      };
+    }
+    return null;
+  }).filter(point => point !== null);
+
+  // Reduce X-axis ticks to 6-8 per chart
+  const xAxisInterval = Math.ceil(x.length / 7); // Target ~7 ticks
+
   const option = {
     backgroundColor: "transparent",
     grid: { 
       left: 60, 
-      right: 20, 
+      right: 80, // Increased right margin for capacity label
       top: 20, 
       bottom: 40,
       containLabel: true
@@ -80,7 +97,15 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
         
         params.forEach((param: any) => {
           if (param.seriesName === "Predicted" && param.value !== null) {
-            result += `Predicted: <span style="color: #0B4FA7">${param.value}</span><br/>`;
+            const isSpike = param.value > spikeThreshold;
+            result += `Predicted: <span style="color: #0B4FA7">${param.value}</span>`;
+            if (isSpike) {
+              result += `<br/><span style="color: #ED1C24">🚨 Why spike? Potential causes:</span><br/>`;
+              result += `<span style="color: #ED1C24">• Terminal capacity overload</span><br/>`;
+              result += `<span style="color: #ED1C24">• Operational shift change</span><br/>`;
+              result += `<span style="color: #ED1C24">• Weather/external factors</span>`;
+            }
+            result += `<br/>`;
           }
           if (param.seriesName === "Capacity" && param.value !== null) {
             result += `Capacity: <span style="color: #00A859">${param.value}</span><br/>`;
@@ -94,7 +119,8 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
     },
     xAxis: { 
       type: "category", 
-      data: x, 
+      data: x,
+      interval: xAxisInterval - 1, // Reduce tick density
       axisLine: { lineStyle: { color: colors.gridLines, width: 2 } }, 
       axisLabel: { 
         color: isEmpty ? colors.gridLines : colors.text, 
@@ -106,7 +132,7 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
       type: "value", 
       min: 0, 
       axisLine: { lineStyle: { color: colors.gridLines, width: 2 } }, 
-      splitLine: { lineStyle: { color: colors.gridLines, width: 1, opacity: 0.3 } }, 
+      splitLine: { lineStyle: { color: '#B3B3B3', width: 1, opacity: 0.3 } }, // Lightened gridlines
       axisLabel: { 
         color: isEmpty ? colors.gridLines : colors.text, 
         fontSize: 10, 
@@ -159,10 +185,46 @@ export default function FanChart({ rows, title, capacity: capacityValue }:{ rows
       },
       // main forecast line
       { name: "Predicted", type: "line", data: y, symbol: "circle", symbolSize: 6, smooth: true, lineStyle:{width:3, color: isEmpty ? colors.gridLines : colors.forecastNormal}, itemStyle:{opacity: isEmpty ? 0.3 : 0.9}, z:4,
-        markPoint: isEmpty ? undefined : { data: [{ name: "Peak", xAxis: x[peakIdx], yAxis: y[peakIdx], value: Math.round(y[peakIdx]) }], label:{color: colors.text} },
+        markPoint: isEmpty ? undefined : { 
+          data: [
+            { name: "Peak", coord: [peakIdx, y[peakIdx]], value: Math.round(y[peakIdx]), label:{color: colors.text} },
+            ...spikePoints.map(spike => ({
+              name: "Spike",
+              coord: spike.coord,
+              value: spike.value,
+              symbol: 'pin',
+              symbolSize: 20,
+              itemStyle: { color: '#ED1C24', borderColor: '#B3010F', borderWidth: 2 },
+              label: { show: true, position: 'top', color: '#ED1C24', fontWeight: 'bold' }
+            }))
+          ]
+        },
         silent: isEmpty
       },
-      { name: "Capacity", type: "line", data: capacity, symbol: "none", lineStyle: { type: "dashed", color: isEmpty ? colors.gridLines : colors.capacity, width: 3 }, z: 1, silent: isEmpty },
+      { name: "Capacity", type: "line", data: capacity, symbol: "none", lineStyle: { type: "dashed", color: isEmpty ? colors.gridLines : colors.capacity, width: 2 }, z: 1, silent: isEmpty,
+        markLine: {
+          symbol: 'none',
+          label: {
+            show: true,
+            position: 'end',
+            formatter: 'Capacity',
+            color: colors.capacity,
+            fontSize: 12,
+            fontWeight: 'bold',
+            backgroundColor: 'transparent',
+            padding: [4, 8]
+          },
+          lineStyle: {
+            type: 'dashed',
+            color: colors.capacity,
+            width: 2
+          },
+          data: [{
+            yAxis: capacity[0],
+            x: '95%' // Position label at far right
+          }]
+        }
+      },
     ]
   };
 

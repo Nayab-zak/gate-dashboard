@@ -43,7 +43,8 @@ export default function PrettyHeatmap({ cells }:{ cells:{terminal:string; hour:n
     grid: { left: 110, right: 20, top: 20, bottom: 50 },
     xAxis: { 
       type: "category", 
-      data: hours.map(h=>`${String(h).padStart(2,"0")}`), 
+      data: hours.map(h=>`${String(h).padStart(2,"0")}`),
+      interval: Math.ceil(hours.length / 8) - 1, // Reduce to 6-8 ticks
       axisLabel: { 
         color: colors.axisText,
         fontSize: 11,
